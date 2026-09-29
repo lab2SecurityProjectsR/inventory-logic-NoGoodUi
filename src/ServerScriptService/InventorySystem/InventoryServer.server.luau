@@ -238,7 +238,7 @@ UseItemEvent.OnServerEvent:Connect(function(player: Player, slotIndex: number)
     SendProfileUpdate(player)
 end)
 
--- Remote Handler: Equip Item
+-- Remote Handler: Equip / Toggle Equip Item
 EquipItemEvent.OnServerEvent:Connect(function(player: Player, fromSlot: number, equipSlotType: string)
     if type(fromSlot) ~= "number" or (equipSlotType ~= "Weapon" and equipSlotType ~= "Armor") then
         return
@@ -256,9 +256,17 @@ EquipItemEvent.OnServerEvent:Connect(function(player: Player, fromSlot: number, 
 
     local currentEquipped = profile.Equipment[equipSlotType]
 
-    -- Move slot to equipment
+    -- TOGGLE BEHAVIOR: If this item is ALREADY equipped, pressing/clicking it unequips/sheathes it!
+    if currentEquipped and currentEquipped.UUID == slot.UUID then
+        profile.Equipment[equipSlotType] = nil
+        EquipmentService.ApplyEquipmentVisual(player, equipSlotType, nil)
+        SendNotification(player, string.format("Unequipped %s", itemDef.Name), "Info")
+        SendProfileUpdate(player)
+        return
+    end
+
+    -- Equip the item (item stays in its slot with active equipped state)
     profile.Equipment[equipSlotType] = slot
-    profile.Slots[fromSlot] = currentEquipped -- swap if something was equipped, else nil
 
     EquipmentService.ApplyEquipmentVisual(player, equipSlotType, slot)
     SendNotification(player, string.format("Equipped %s", itemDef.Name), "Success")
@@ -266,7 +274,7 @@ EquipItemEvent.OnServerEvent:Connect(function(player: Player, fromSlot: number, 
 end)
 
 -- Remote Handler: Unequip Item
-UnequipItemEvent.OnServerEvent:Connect(function(player: Player, equipSlotType: string, toSlot: number?)
+UnequipItemEvent.OnServerEvent:Connect(function(player: Player, equipSlotType: string, _toSlot: number?)
     if equipSlotType ~= "Weapon" and equipSlotType ~= "Armor" then return end
 
     local profile = DataSessionManager.GetProfile(player)
@@ -275,19 +283,7 @@ UnequipItemEvent.OnServerEvent:Connect(function(player: Player, equipSlotType: s
     local equipped = profile.Equipment[equipSlotType]
     if not equipped then return end
 
-    local targetSlot = toSlot and math.floor(toSlot) or FindEmptySlot(profile)
-    if not targetSlot or profile.Slots[targetSlot] then
-        targetSlot = FindEmptySlot(profile)
-    end
-
-    if not targetSlot then
-        SendNotification(player, "Inventory is full! Drop or use an item first to unequip.", "Warning")
-        return
-    end
-
     local itemDef = ItemDatabase.GetItem(equipped.ItemId)
-    equipped.SlotIndex = targetSlot
-    profile.Slots[targetSlot] = equipped
     profile.Equipment[equipSlotType] = nil
 
     EquipmentService.ApplyEquipmentVisual(player, equipSlotType, nil)
@@ -315,6 +311,16 @@ DropItemEvent.OnServerEvent:Connect(function(player: Player, slotIndex: number, 
 
     slot.Quantity -= dropQty
     local droppedItemId = slot.ItemId
+    local wasEquippedWeapon = profile.Equipment.Weapon and profile.Equipment.Weapon.UUID == slot.UUID
+    local wasEquippedArmor = profile.Equipment.Armor and profile.Equipment.Armor.UUID == slot.UUID
+
+    if wasEquippedWeapon then
+        profile.Equipment.Weapon = nil
+        EquipmentService.ApplyEquipmentVisual(player, "Weapon", nil)
+    elseif wasEquippedArmor then
+        profile.Equipment.Armor = nil
+        EquipmentService.ApplyEquipmentVisual(player, "Armor", nil)
+    end
 
     if slot.Quantity <= 0 then
         profile.Slots[slotIndex] = nil

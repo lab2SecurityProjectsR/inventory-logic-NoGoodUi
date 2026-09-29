@@ -2,9 +2,9 @@
 --[=[
     InventoryController.client.luau
     Author: JV (lab2 / lab2SecurityProjectsR)
-    Cyber-Glassmorphic Client Controller & HUD for the Inventory & Equipment Suite.
-    Features drag-and-drop slot operations, 5-slot interactive Hotbar, equipment slots,
-    live stat displays, detailed hover tooltips, and a instant demo starter-pack button.
+    Elite AAA Tactile "Gominola" Cyber-Chassis UI & Hotbar for the Inventory & Equipment Suite.
+    Modeled after professional industry UI references (beveled metallic chassis, 6-column grid,
+    search & category filtering, 3D gummy bounce micro-animations, live slot toggling).
     Copyright (c) 2026 JV. All rights reserved.
 ]=]
 
@@ -43,8 +43,12 @@ local NotificationEvent = RemotesFolder:WaitForChild("NotificationEvent") :: Rem
 local currentProfile: InventoryProfile? = nil
 local selectedSlotIndex: number? = nil
 local isInventoryOpen = false
-local slotFrames: { [number]: TextButton } = {}
-local hotbarFrames: { [number]: TextButton } = {}
+local currentCategoryFilter = "All"
+local searchQuery = ""
+local currentSortMode = "Rarity" -- "Rarity", "Name", "Quantity"
+
+local slotFrames: { [number]: Frame } = {}
+local hotbarFrames: { [number]: Frame } = {}
 
 -- UI Creation
 local screenGui = Instance.new("ScreenGui")
@@ -53,14 +57,16 @@ screenGui.ResetOnSpawn = false
 screenGui.DisplayOrder = 15
 screenGui.Parent = playerGui
 
--- Toast Notification Banner
+-- =========================================================================
+-- TOAST NOTIFICATION BANNER
+-- =========================================================================
 local toastFrame = Instance.new("Frame")
 toastFrame.Name = "ToastNotification"
 toastFrame.Size = UDim2.new(0, 360, 0, 44)
-toastFrame.Position = UDim2.new(0.5, -180, 0, -60) -- Off-screen initially
+toastFrame.Position = UDim2.new(0.5, -180, 0, -60)
 toastFrame.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
 toastFrame.BorderSizePixel = 0
-toastFrame.ZIndex = 50
+toastFrame.ZIndex = 60
 toastFrame.Parent = screenGui
 
 local toastCorner = Instance.new("UICorner")
@@ -69,7 +75,7 @@ toastCorner.Parent = toastFrame
 
 local toastStroke = Instance.new("UIStroke")
 toastStroke.Color = Color3.fromRGB(56, 189, 248)
-toastStroke.Thickness = 1.2
+toastStroke.Thickness = 1.4
 toastStroke.Parent = toastFrame
 
 local toastIcon = Instance.new("TextLabel")
@@ -80,7 +86,7 @@ toastIcon.BackgroundTransparency = 1
 toastIcon.Font = Enum.Font.GothamBold
 toastIcon.TextSize = 16
 toastIcon.Text = "ℹ️"
-toastIcon.ZIndex = 51
+toastIcon.ZIndex = 61
 toastIcon.Parent = toastFrame
 
 local toastLabel = Instance.new("TextLabel")
@@ -93,7 +99,7 @@ toastLabel.TextSize = 12
 toastLabel.TextColor3 = Color3.fromRGB(241, 245, 249)
 toastLabel.TextXAlignment = Enum.TextXAlignment.Left
 toastLabel.RichText = true
-toastLabel.ZIndex = 51
+toastLabel.ZIndex = 61
 toastLabel.Parent = toastFrame
 
 local isToastActive = false
@@ -137,923 +143,932 @@ end
 
 NotificationEvent.OnClientEvent:Connect(ShowToast)
 
--- Top Toggle Button
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Name = "InventoryToggleBtn"
-toggleBtn.Size = UDim2.new(0, 160, 0, 42)
-toggleBtn.Position = UDim2.new(1, -180, 0, 20)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
-toggleBtn.BorderSizePixel = 0
-toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.Text = "🎒 INVENTORY [E]"
-toggleBtn.TextColor3 = Color3.fromRGB(56, 189, 248)
-toggleBtn.TextSize = 13
-toggleBtn.AutoButtonColor = true
-toggleBtn.Parent = screenGui
-
-local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 8)
-toggleCorner.Parent = toggleBtn
-
-local toggleStroke = Instance.new("UIStroke")
-toggleStroke.Color = Color3.fromRGB(56, 189, 248)
-toggleStroke.Thickness = 1.2
-toggleStroke.Transparency = 0.3
-toggleStroke.Parent = toggleBtn
-
--- Main Window
-local mainWindow = Instance.new("Frame")
-mainWindow.Name = "MainWindow"
-mainWindow.Size = UDim2.new(0, 860, 0, 520)
-mainWindow.Position = UDim2.new(0.5, -430, 0.5, -260)
-mainWindow.BackgroundColor3 = Color3.fromRGB(11, 15, 25)
-mainWindow.BackgroundTransparency = 0.05
-mainWindow.BorderSizePixel = 0
-mainWindow.Visible = false
-mainWindow.Parent = screenGui
+-- =========================================================================
+-- MAIN INVENTORY WINDOW (ARTSTATION CHASSIS WITH BEVELED DETAILS)
+-- =========================================================================
+local mainContainer = Instance.new("Frame")
+mainContainer.Name = "MainInventoryWindow"
+mainContainer.Size = UDim2.new(0, 580, 0, 560)
+mainContainer.Position = UDim2.new(0.5, -290, 0.5, -280)
+mainContainer.BackgroundColor3 = Color3.fromRGB(32, 42, 58) -- Brushed titanium slate
+mainContainer.BorderSizePixel = 0
+mainContainer.Visible = false
+mainContainer.ZIndex = 20
+mainContainer.Parent = screenGui
 
 local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 12)
-mainCorner.Parent = mainWindow
+mainCorner.CornerRadius = UDim.new(0, 14)
+mainCorner.Parent = mainContainer
 
 local mainStroke = Instance.new("UIStroke")
-mainStroke.Color = Color3.fromRGB(56, 189, 248)
-mainStroke.Thickness = 1.5
-mainStroke.Transparency = 0.4
-mainStroke.Parent = mainWindow
+mainStroke.Color = Color3.fromRGB(65, 82, 108)
+mainStroke.Thickness = 2.5
+mainStroke.Parent = mainContainer
 
--- Window Header
-local header = Instance.new("Frame")
-header.Name = "Header"
-header.Size = UDim2.new(1, 0, 0, 48)
-header.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
-header.BorderSizePixel = 0
-header.Parent = mainWindow
+-- 4 Corner Screws / Hex Bolts (Exactly as in ArtStation reference)
+local boltPositions = {
+    UDim2.new(0, 8, 0, 8),
+    UDim2.new(1, -16, 0, 8),
+    UDim2.new(0, 8, 1, -16),
+    UDim2.new(1, -16, 1, -16),
+}
+for i, bPos in ipairs(boltPositions) do
+    local bolt = Instance.new("Frame")
+    bolt.Name = "Bolt_" .. i
+    bolt.Size = UDim2.new(0, 8, 0, 8)
+    bolt.Position = bPos
+    bolt.BackgroundColor3 = Color3.fromRGB(120, 135, 155)
+    bolt.BorderSizePixel = 0
+    bolt.ZIndex = 25
+    bolt.Parent = mainContainer
 
-local headerCorner = Instance.new("UICorner")
-headerCorner.CornerRadius = UDim.new(0, 12)
-headerCorner.Parent = header
+    local bc = Instance.new("UICorner")
+    bc.CornerRadius = UDim.new(1, 0)
+    bc.Parent = bolt
+end
 
+-- Side Copper/Bronze Hydraulic Vents (ArtStation Detail)
+local leftVent = Instance.new("Frame")
+leftVent.Name = "LeftHydraulicVent"
+leftVent.Size = UDim2.new(0, 5, 0, 120)
+leftVent.Position = UDim2.new(0, 2, 0.5, -60)
+leftVent.BackgroundColor3 = Color3.fromRGB(190, 120, 65)
+leftVent.BorderSizePixel = 0
+leftVent.ZIndex = 22
+leftVent.Parent = mainContainer
+Instance.new("UICorner", leftVent).CornerRadius = UDim.new(0, 3)
+
+local rightVent = Instance.new("Frame")
+rightVent.Name = "RightHydraulicVent"
+rightVent.Size = UDim2.new(0, 5, 0, 120)
+rightVent.Position = UDim2.new(1, -7, 0.5, -60)
+rightVent.BackgroundColor3 = Color3.fromRGB(190, 120, 65)
+rightVent.BorderSizePixel = 0
+rightVent.ZIndex = 22
+rightVent.Parent = mainContainer
+Instance.new("UICorner", rightVent).CornerRadius = UDim.new(0, 3)
+
+-- Bottom Grill with Amber Status Diode
+local bottomGrill = Instance.new("Frame")
+bottomGrill.Name = "BottomGrill"
+bottomGrill.Size = UDim2.new(0, 140, 0, 5)
+bottomGrill.Position = UDim2.new(0.5, -70, 1, -12)
+bottomGrill.BackgroundColor3 = Color3.fromRGB(245, 175, 40)
+bottomGrill.BorderSizePixel = 0
+bottomGrill.ZIndex = 25
+bottomGrill.Parent = mainContainer
+Instance.new("UICorner", bottomGrill).CornerRadius = UDim.new(1, 0)
+
+-- Inner Dark Glass Panel
+local innerPanel = Instance.new("Frame")
+innerPanel.Name = "InnerPanel"
+innerPanel.Size = UDim2.new(1, -24, 1, -30)
+innerPanel.Position = UDim2.new(0, 12, 0, 15)
+innerPanel.BackgroundColor3 = Color3.fromRGB(14, 20, 32)
+innerPanel.BorderSizePixel = 0
+innerPanel.ZIndex = 21
+innerPanel.Parent = mainContainer
+
+local innerCorner = Instance.new("UICorner")
+innerCorner.CornerRadius = UDim.new(0, 10)
+innerCorner.Parent = innerPanel
+
+local innerStroke = Instance.new("UIStroke")
+innerStroke.Color = Color3.fromRGB(24, 34, 52)
+innerStroke.Thickness = 1.5
+innerStroke.Parent = innerPanel
+
+-- Header Title: "MY INVENTORY"
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(0, 360, 1, 0)
-titleLabel.Position = UDim2.new(0, 18, 0, 0)
+titleLabel.Name = "TitleLabel"
+titleLabel.Size = UDim2.new(0, 200, 0, 32)
+titleLabel.Position = UDim2.new(0, 16, 0, 8)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Font = Enum.Font.GothamBold
-titleLabel.Text = "⚡ AEGIS // QUANTUM INVENTORY & LOADOUT"
-titleLabel.TextColor3 = Color3.fromRGB(241, 245, 249)
-titleLabel.TextSize = 13
+titleLabel.Text = "MY INVENTORY"
+titleLabel.TextColor3 = Color3.fromRGB(245, 248, 255)
+titleLabel.TextSize = 18
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.Parent = header
+titleLabel.ZIndex = 24
+titleLabel.Parent = innerPanel
 
--- Capacity Counter Pill in Header
-local capPill = Instance.new("Frame")
-capPill.Name = "CapacityPill"
-capPill.Size = UDim2.new(0, 140, 0, 26)
-capPill.Position = UDim2.new(1, -190, 0.5, -13)
-capPill.BackgroundColor3 = Color3.fromRGB(24, 33, 50)
-capPill.BorderSizePixel = 0
-capPill.Parent = header
-
-local capPillCorner = Instance.new("UICorner")
-capPillCorner.CornerRadius = UDim.new(0, 6)
-capPillCorner.Parent = capPill
-
-local capPillLabel = Instance.new("TextLabel")
-capPillLabel.Name = "Label"
-capPillLabel.Size = UDim2.new(1, 0, 1, 0)
-capPillLabel.BackgroundTransparency = 1
-capPillLabel.Font = Enum.Font.GothamBold
-capPillLabel.TextSize = 11
-capPillLabel.TextColor3 = Color3.fromRGB(56, 189, 248)
-capPillLabel.Text = "SLOTS: 0 / 30"
-capPillLabel.Parent = capPill
-
--- Close Button (Fixed glyph)
+-- Close Button (Top-Right ✕ with Gummy Tactile Feel)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Name = "CloseBtn"
-closeBtn.Size = UDim2.new(0, 32, 0, 32)
-closeBtn.Position = UDim2.new(1, -42, 0, 8)
-closeBtn.BackgroundColor3 = Color3.fromRGB(30, 41, 59)
+closeBtn.Size = UDim2.new(0, 28, 0, 28)
+closeBtn.Position = UDim2.new(1, -38, 0, 10)
+closeBtn.BackgroundColor3 = Color3.fromRGB(25, 33, 48)
 closeBtn.BorderSizePixel = 0
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Text = "X"
-closeBtn.TextColor3 = Color3.fromRGB(248, 113, 113)
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(148, 163, 184)
 closeBtn.TextSize = 14
-closeBtn.Parent = header
+closeBtn.AutoButtonColor = false
+closeBtn.ZIndex = 25
+closeBtn.Parent = innerPanel
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
 
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 6)
-closeCorner.Parent = closeBtn
+local closeStroke = Instance.new("UIStroke")
+closeStroke.Color = Color3.fromRGB(45, 58, 80)
+closeStroke.Thickness = 1.2
+closeStroke.Parent = closeBtn
 
 closeBtn.MouseEnter:Connect(function()
     closeBtn.BackgroundColor3 = Color3.fromRGB(220, 38, 38)
     closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 end)
 closeBtn.MouseLeave:Connect(function()
-    closeBtn.BackgroundColor3 = Color3.fromRGB(30, 41, 59)
-    closeBtn.TextColor3 = Color3.fromRGB(248, 113, 113)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(25, 33, 48)
+    closeBtn.TextColor3 = Color3.fromRGB(148, 163, 184)
 end)
 
--- Left Pane: Loadout & Stats
-local leftPane = Instance.new("Frame")
-leftPane.Name = "LeftPane"
-leftPane.Size = UDim2.new(0, 260, 1, -66)
-leftPane.Position = UDim2.new(0, 16, 0, 56)
-leftPane.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
-leftPane.BackgroundTransparency = 0.5
-leftPane.BorderSizePixel = 0
-leftPane.Parent = mainWindow
+-- =========================================================================
+-- FILTER & SEARCH BAR (MATCHING ARTSTATION REFERENCE)
+-- =========================================================================
+local controlRow = Instance.new("Frame")
+controlRow.Name = "ControlRow"
+controlRow.Size = UDim2.new(1, -32, 0, 34)
+controlRow.Position = UDim2.new(0, 16, 0, 46)
+controlRow.BackgroundTransparency = 1
+controlRow.ZIndex = 24
+controlRow.Parent = innerPanel
 
-local leftCorner = Instance.new("UICorner")
-leftCorner.CornerRadius = UDim.new(0, 8)
-leftCorner.Parent = leftPane
+-- Search Input Pill
+local searchFrame = Instance.new("Frame")
+searchFrame.Name = "SearchFrame"
+searchFrame.Size = UDim2.new(0, 160, 1, 0)
+searchFrame.BackgroundColor3 = Color3.fromRGB(20, 28, 44)
+searchFrame.BorderSizePixel = 0
+searchFrame.ZIndex = 24
+searchFrame.Parent = controlRow
+Instance.new("UICorner", searchFrame).CornerRadius = UDim.new(0, 8)
 
-local eqTitle = Instance.new("TextLabel")
-eqTitle.Size = UDim2.new(1, 0, 0, 26)
-eqTitle.Position = UDim2.new(0, 12, 0, 8)
-eqTitle.BackgroundTransparency = 1
-eqTitle.Font = Enum.Font.GothamBold
-eqTitle.Text = "EQUIPMENT LOADOUT"
-eqTitle.TextColor3 = Color3.fromRGB(148, 163, 184)
-eqTitle.TextSize = 11
-eqTitle.TextXAlignment = Enum.TextXAlignment.Left
-eqTitle.Parent = leftPane
+local searchStroke = Instance.new("UIStroke")
+searchStroke.Color = Color3.fromRGB(45, 60, 85)
+searchStroke.Thickness = 1.2
+searchStroke.Parent = searchFrame
 
--- Weapon Card
-local weaponCard = Instance.new("Frame")
-weaponCard.Name = "WeaponCard"
-weaponCard.Size = UDim2.new(1, -24, 0, 72)
-weaponCard.Position = UDim2.new(0, 12, 0, 36)
-weaponCard.BackgroundColor3 = Color3.fromRGB(11, 15, 25)
-weaponCard.BorderSizePixel = 0
-weaponCard.Parent = leftPane
+local searchIcon = Instance.new("TextLabel")
+searchIcon.Size = UDim2.new(0, 24, 1, 0)
+searchIcon.Position = UDim2.new(0, 6, 0, 0)
+searchIcon.BackgroundTransparency = 1
+searchIcon.Text = "🔍"
+searchIcon.TextSize = 12
+searchIcon.ZIndex = 25
+searchIcon.Parent = searchFrame
 
-local weaponCorner = Instance.new("UICorner")
-weaponCorner.CornerRadius = UDim.new(0, 8)
-weaponCorner.Parent = weaponCard
+local searchInput = Instance.new("TextBox")
+searchInput.Name = "SearchInput"
+searchInput.Size = UDim2.new(1, -34, 1, 0)
+searchInput.Position = UDim2.new(0, 30, 0, 0)
+searchInput.BackgroundTransparency = 1
+searchInput.Font = Enum.Font.GothamMedium
+searchInput.PlaceholderText = "Search..."
+searchInput.PlaceholderColor3 = Color3.fromRGB(100, 116, 139)
+searchInput.Text = ""
+searchInput.TextColor3 = Color3.fromRGB(241, 245, 249)
+searchInput.TextSize = 12
+searchInput.TextXAlignment = Enum.TextXAlignment.Left
+searchInput.ClearTextOnFocus = false
+searchInput.ZIndex = 25
+searchInput.Parent = searchFrame
 
-local weaponStroke = Instance.new("UIStroke")
-weaponStroke.Color = Color3.fromRGB(56, 189, 248)
-weaponStroke.Thickness = 1.2
-weaponStroke.Parent = weaponCard
+-- Category Tabs (All, Weapons, Armor, Stims, Materials)
+local categoryButtons: { [string]: TextButton } = {}
+local categories = {
+    { Id = "All", Label = "✨ All" },
+    { Id = "Weapon", Label = "⚔️ Weapons" },
+    { Id = "Armor", Label = "🛡️ Armor" },
+    { Id = "Consumable", Label = "🧪 Stims" },
+}
 
-local weaponIcon = Instance.new("TextLabel")
-weaponIcon.Name = "Icon"
-weaponIcon.Size = UDim2.new(0, 48, 1, 0)
-weaponIcon.BackgroundTransparency = 1
-weaponIcon.Font = Enum.Font.GothamBold
-weaponIcon.TextSize = 24
-weaponIcon.Text = "⚔️"
-weaponIcon.Parent = weaponCard
+local tabContainer = Instance.new("Frame")
+tabContainer.Name = "TabContainer"
+tabContainer.Size = UDim2.new(1, -260, 1, 0)
+tabContainer.Position = UDim2.new(0, 170, 0, 0)
+tabContainer.BackgroundTransparency = 1
+tabContainer.ZIndex = 24
+tabContainer.Parent = controlRow
 
-local weaponTitle = Instance.new("TextLabel")
-weaponTitle.Name = "Title"
-weaponTitle.Size = UDim2.new(1, -120, 0, 20)
-weaponTitle.Position = UDim2.new(0, 48, 0, 8)
-weaponTitle.BackgroundTransparency = 1
-weaponTitle.Font = Enum.Font.GothamBold
-weaponTitle.TextSize = 12
-weaponTitle.TextColor3 = Color3.fromRGB(241, 245, 249)
-weaponTitle.TextXAlignment = Enum.TextXAlignment.Left
-weaponTitle.Text = "No Weapon"
-weaponTitle.Parent = weaponCard
+local tabLayout = Instance.new("UIListLayout")
+tabLayout.FillDirection = Enum.FillDirection.Horizontal
+tabLayout.Padding = UDim.new(0, 6)
+tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+tabLayout.Parent = tabContainer
 
-local weaponStats = Instance.new("TextLabel")
-weaponStats.Name = "Stats"
-weaponStats.Size = UDim2.new(1, -120, 0, 18)
-weaponStats.Position = UDim2.new(0, 48, 0, 28)
-weaponStats.BackgroundTransparency = 1
-weaponStats.Font = Enum.Font.Gotham
-weaponStats.TextSize = 10
-weaponStats.TextColor3 = Color3.fromRGB(148, 163, 184)
-weaponStats.TextXAlignment = Enum.TextXAlignment.Left
-weaponStats.Text = "Slot Empty"
-weaponStats.Parent = weaponCard
+local function UpdateCategoryVisuals()
+    for id, btn in pairs(categoryButtons) do
+        local isSelected = (id == currentCategoryFilter)
+        btn.BackgroundColor3 = isSelected and Color3.fromRGB(56, 189, 248) or Color3.fromRGB(22, 30, 46)
+        btn.TextColor3 = isSelected and Color3.fromRGB(15, 23, 42) or Color3.fromRGB(148, 163, 184)
+        local stroke = btn:FindFirstChildOfClass("UIStroke")
+        if stroke then
+            stroke.Color = isSelected and Color3.fromRGB(56, 189, 248) or Color3.fromRGB(40, 52, 74)
+        end
+    end
+end
 
-local unequipWeaponBtn = Instance.new("TextButton")
-unequipWeaponBtn.Name = "UnequipBtn"
-unequipWeaponBtn.Size = UDim2.new(0, 68, 0, 28)
-unequipWeaponBtn.Position = UDim2.new(1, -74, 0.5, -14)
-unequipWeaponBtn.BackgroundColor3 = Color3.fromRGB(30, 41, 59)
-unequipWeaponBtn.BorderSizePixel = 0
-unequipWeaponBtn.Font = Enum.Font.GothamBold
-unequipWeaponBtn.Text = "UNEQUIP"
-unequipWeaponBtn.TextColor3 = Color3.fromRGB(248, 113, 113)
-unequipWeaponBtn.TextSize = 10
-unequipWeaponBtn.Visible = false
-unequipWeaponBtn.Parent = weaponCard
+for _, cat in ipairs(categories) do
+    local btn = Instance.new("TextButton")
+    btn.Name = "Tab_" .. cat.Id
+    btn.Size = UDim2.new(0, 72, 1, -4)
+    btn.BackgroundColor3 = (cat.Id == "All") and Color3.fromRGB(56, 189, 248) or Color3.fromRGB(22, 30, 46)
+    btn.BorderSizePixel = 0
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = cat.Label
+    btn.TextColor3 = (cat.Id == "All") and Color3.fromRGB(15, 23, 42) or Color3.fromRGB(148, 163, 184)
+    btn.TextSize = 10
+    btn.AutoButtonColor = false
+    btn.ZIndex = 25
+    btn.Parent = tabContainer
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
 
-local uWCorner = Instance.new("UICorner")
-uWCorner.CornerRadius = UDim.new(0, 6)
-uWCorner.Parent = unequipWeaponBtn
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = (cat.Id == "All") and Color3.fromRGB(56, 189, 248) or Color3.fromRGB(40, 52, 74)
+    stroke.Thickness = 1.2
+    stroke.Parent = btn
 
--- Armor Card
-local armorCard = Instance.new("Frame")
-armorCard.Name = "ArmorCard"
-armorCard.Size = UDim2.new(1, -24, 0, 72)
-armorCard.Position = UDim2.new(0, 12, 0, 118)
-armorCard.BackgroundColor3 = Color3.fromRGB(11, 15, 25)
-armorCard.BorderSizePixel = 0
-armorCard.Parent = leftPane
+    categoryButtons[cat.Id] = btn
 
-local armorCorner = Instance.new("UICorner")
-armorCorner.CornerRadius = UDim.new(0, 8)
-armorCorner.Parent = armorCard
+    btn.MouseButton1Click:Connect(function()
+        currentCategoryFilter = cat.Id
+        UpdateCategoryVisuals()
+        task.spawn(function()
+            -- Re-render inventory grid
+            local RenderInventory = _G.__RenderInventoryFunc
+            if RenderInventory then RenderInventory() end
+        end)
+    end)
+end
 
-local armorStroke = Instance.new("UIStroke")
-armorStroke.Color = Color3.fromRGB(168, 85, 247)
-armorStroke.Thickness = 1.2
-armorStroke.Parent = armorCard
-
-local armorIcon = Instance.new("TextLabel")
-armorIcon.Name = "Icon"
-armorIcon.Size = UDim2.new(0, 48, 1, 0)
-armorIcon.BackgroundTransparency = 1
-armorIcon.Font = Enum.Font.GothamBold
-armorIcon.TextSize = 24
-armorIcon.Text = "🛡️"
-armorIcon.Parent = armorCard
-
-local armorTitle = Instance.new("TextLabel")
-armorTitle.Name = "Title"
-armorTitle.Size = UDim2.new(1, -120, 0, 20)
-armorTitle.Position = UDim2.new(0, 48, 0, 8)
-armorTitle.BackgroundTransparency = 1
-armorTitle.Font = Enum.Font.GothamBold
-armorTitle.TextSize = 12
-armorTitle.TextColor3 = Color3.fromRGB(241, 245, 249)
-armorTitle.TextXAlignment = Enum.TextXAlignment.Left
-armorTitle.Text = "No Shield / Armor"
-armorTitle.Parent = armorCard
-
-local armorStats = Instance.new("TextLabel")
-armorStats.Name = "Stats"
-armorStats.Size = UDim2.new(1, -120, 0, 18)
-armorStats.Position = UDim2.new(0, 48, 0, 28)
-armorStats.BackgroundTransparency = 1
-armorStats.Font = Enum.Font.Gotham
-armorStats.TextSize = 10
-armorStats.TextColor3 = Color3.fromRGB(148, 163, 184)
-armorStats.TextXAlignment = Enum.TextXAlignment.Left
-armorStats.Text = "Slot Empty"
-armorStats.Parent = armorCard
-
-local unequipArmorBtn = Instance.new("TextButton")
-unequipArmorBtn.Name = "UnequipBtn"
-unequipArmorBtn.Size = UDim2.new(0, 68, 0, 28)
-unequipArmorBtn.Position = UDim2.new(1, -74, 0.5, -14)
-unequipArmorBtn.BackgroundColor3 = Color3.fromRGB(30, 41, 59)
-unequipArmorBtn.BorderSizePixel = 0
-unequipArmorBtn.Font = Enum.Font.GothamBold
-unequipArmorBtn.Text = "UNEQUIP"
-unequipArmorBtn.TextColor3 = Color3.fromRGB(248, 113, 113)
-unequipArmorBtn.TextSize = 10
-unequipArmorBtn.Visible = false
-unequipArmorBtn.Parent = armorCard
-
-local uACorner = Instance.new("UICorner")
-uACorner.CornerRadius = UDim.new(0, 6)
-uACorner.Parent = unequipArmorBtn
-
--- Stats Card
-local statsCard = Instance.new("Frame")
-statsCard.Name = "StatsCard"
-statsCard.Size = UDim2.new(1, -24, 0, 134)
-statsCard.Position = UDim2.new(0, 12, 0, 202)
-statsCard.BackgroundColor3 = Color3.fromRGB(11, 15, 25)
-statsCard.BorderSizePixel = 0
-statsCard.Parent = leftPane
-
-local statsCorner = Instance.new("UICorner")
-statsCorner.CornerRadius = UDim.new(0, 8)
-statsCorner.Parent = statsCard
-
-local statsText = Instance.new("TextLabel")
-statsText.Name = "StatsLabel"
-statsText.Size = UDim2.new(1, -20, 1, -16)
-statsText.Position = UDim2.new(0, 10, 0, 8)
-statsText.BackgroundTransparency = 1
-statsText.Font = Enum.Font.GothamMedium
-statsText.TextSize = 11
-statsText.TextColor3 = Color3.fromRGB(203, 213, 225)
-statsText.TextXAlignment = Enum.TextXAlignment.Left
-statsText.TextYAlignment = Enum.TextYAlignment.Top
-statsText.RichText = true
-statsText.Text = "<b>📊 OPERATIONAL METRICS</b>\n\n• ⚡ <b>Speed:</b> 16 studs/s\n• ⚔️ <b>Damage:</b> 0 DP\n• 🛡️ <b>Armor:</b> 0 AP\n• 🔒 <b>Session Lock:</b> <font color=\"#10B981\">Active</font>"
-statsText.Parent = statsCard
-
--- Admin Demo Button
+-- Starter Pack Demo Button (Top Right)
 local demoBtn = Instance.new("TextButton")
-demoBtn.Name = "DemoBtn"
-demoBtn.Size = UDim2.new(1, -24, 0, 44)
-demoBtn.Position = UDim2.new(0, 12, 1, -54)
-demoBtn.BackgroundColor3 = Color3.fromRGB(217, 119, 6)
+demoBtn.Name = "DemoKitBtn"
+demoBtn.Size = UDim2.new(0, 80, 1, 0)
+demoBtn.Position = UDim2.new(1, -80, 0, 0)
+demoBtn.BackgroundColor3 = Color3.fromRGB(245, 158, 11)
 demoBtn.BorderSizePixel = 0
 demoBtn.Font = Enum.Font.GothamBold
-demoBtn.Text = "🎁 GIVE STARTER PACK"
-demoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-demoBtn.TextSize = 12
-demoBtn.Parent = leftPane
-
-local demoCorner = Instance.new("UICorner")
-demoCorner.CornerRadius = UDim.new(0, 8)
-demoCorner.Parent = demoBtn
-
--- Right Pane: Grid & Action Bar
-local rightPane = Instance.new("Frame")
-rightPane.Name = "RightPane"
-rightPane.Size = UDim2.new(1, -310, 1, -66)
-rightPane.Position = UDim2.new(0, 292, 0, 56)
-rightPane.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
-rightPane.BackgroundTransparency = 0.5
-rightPane.BorderSizePixel = 0
-rightPane.Parent = mainWindow
-
-local rightCorner = Instance.new("UICorner")
-rightCorner.CornerRadius = UDim.new(0, 8)
-rightCorner.Parent = rightPane
-
--- Slot Grid Container
-local gridContainer = Instance.new("ScrollingFrame")
-gridContainer.Name = "GridContainer"
-gridContainer.Size = UDim2.new(1, -16, 1, -86)
-gridContainer.Position = UDim2.new(0, 8, 0, 8)
-gridContainer.BackgroundTransparency = 1
-gridContainer.BorderSizePixel = 0
-gridContainer.ScrollBarThickness = 4
-gridContainer.ScrollBarImageColor3 = Color3.fromRGB(56, 189, 248)
-gridContainer.CanvasSize = UDim2.new(0, 0, 0, 410)
-gridContainer.Parent = rightPane
-
-local gridLayout = Instance.new("UIGridLayout")
-gridLayout.CellSize = UDim2.new(0, 78, 0, 74)
-gridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
-gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-gridLayout.Parent = gridContainer
-
--- Bottom Action Bar for Selected Item
-local actionBar = Instance.new("Frame")
-actionBar.Name = "ActionBar"
-actionBar.Size = UDim2.new(1, -16, 0, 64)
-actionBar.Position = UDim2.new(0, 8, 1, -72)
-actionBar.BackgroundColor3 = Color3.fromRGB(11, 15, 25)
-actionBar.BorderSizePixel = 0
-actionBar.Parent = rightPane
-
-local actionCorner = Instance.new("UICorner")
-actionCorner.CornerRadius = UDim.new(0, 8)
-actionCorner.Parent = actionBar
-
-local actionInfo = Instance.new("TextLabel")
-actionInfo.Name = "ActionInfo"
-actionInfo.Size = UDim2.new(1, -310, 1, 0)
-actionInfo.Position = UDim2.new(0, 12, 0, 0)
-actionInfo.BackgroundTransparency = 1
-actionInfo.Font = Enum.Font.GothamMedium
-actionInfo.Text = "Select an item from the matrix above..."
-actionInfo.TextColor3 = Color3.fromRGB(148, 163, 184)
-actionInfo.TextSize = 11
-actionInfo.TextXAlignment = Enum.TextXAlignment.Left
-actionInfo.RichText = true
-actionInfo.Parent = actionBar
-
-local equipBtn = Instance.new("TextButton")
-equipBtn.Name = "EquipBtn"
-equipBtn.Size = UDim2.new(0, 70, 0, 36)
-equipBtn.Position = UDim2.new(1, -290, 0.5, -18)
-equipBtn.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
-equipBtn.BorderSizePixel = 0
-equipBtn.Font = Enum.Font.GothamBold
-equipBtn.Text = "EQUIP"
-equipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-equipBtn.TextSize = 11
-equipBtn.Visible = false
-equipBtn.Parent = actionBar
-
-local useBtn = Instance.new("TextButton")
-useBtn.Name = "UseBtn"
-useBtn.Size = UDim2.new(0, 70, 0, 36)
-useBtn.Position = UDim2.new(1, -290, 0.5, -18)
-useBtn.BackgroundColor3 = Color3.fromRGB(59, 130, 246)
-useBtn.BorderSizePixel = 0
-useBtn.Font = Enum.Font.GothamBold
-useBtn.Text = "USE"
-useBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-useBtn.TextSize = 11
-useBtn.Visible = false
-useBtn.Parent = actionBar
-
-local splitBtn = Instance.new("TextButton")
-splitBtn.Name = "SplitBtn"
-splitBtn.Size = UDim2.new(0, 68, 0, 36)
-splitBtn.Position = UDim2.new(1, -210, 0.5, -18)
-splitBtn.BackgroundColor3 = Color3.fromRGB(139, 92, 246)
-splitBtn.BorderSizePixel = 0
-splitBtn.Font = Enum.Font.GothamBold
-splitBtn.Text = "SPLIT"
-splitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-splitBtn.TextSize = 11
-splitBtn.Visible = false
-splitBtn.Parent = actionBar
-
-local dropBtn = Instance.new("TextButton")
-dropBtn.Name = "DropBtn"
-dropBtn.Size = UDim2.new(0, 68, 0, 36)
-dropBtn.Position = UDim2.new(1, -132, 0.5, -18)
-dropBtn.BackgroundColor3 = Color3.fromRGB(239, 68, 68)
-dropBtn.BorderSizePixel = 0
-dropBtn.Font = Enum.Font.GothamBold
-dropBtn.Text = "DROP"
-dropBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-dropBtn.TextSize = 11
-dropBtn.Visible = false
-dropBtn.Parent = actionBar
-
-for _, b in ipairs({ equipBtn, useBtn, splitBtn, dropBtn }) do
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 6)
-    c.Parent = b
-end
-
--- Hotbar (Bottom Center)
-local hotbar = Instance.new("Frame")
-hotbar.Name = "Hotbar"
-hotbar.Size = UDim2.new(0, 380, 0, 68)
-hotbar.Position = UDim2.new(0.5, -190, 1, -80)
-hotbar.BackgroundColor3 = Color3.fromRGB(11, 15, 25)
-hotbar.BackgroundTransparency = 0.1
-hotbar.BorderSizePixel = 0
-hotbar.Parent = screenGui
-
-local hotbarCorner = Instance.new("UICorner")
-hotbarCorner.CornerRadius = UDim.new(0, 10)
-hotbarCorner.Parent = hotbar
-
-local hotbarStroke = Instance.new("UIStroke")
-hotbarStroke.Color = Color3.fromRGB(56, 189, 248)
-hotbarStroke.Thickness = 1.2
-hotbarStroke.Transparency = 0.5
-hotbarStroke.Parent = hotbar
-
-local hotbarLayout = Instance.new("UIListLayout")
-hotbarLayout.FillDirection = Enum.FillDirection.Horizontal
-hotbarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-hotbarLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-hotbarLayout.Padding = UDim.new(0, 8)
-hotbarLayout.Parent = hotbar
-
--- Create 30 Grid Slot Frames
-for i = 1, 30 do
-    local slotBtn = Instance.new("TextButton")
-    slotBtn.Name = "Slot_" .. tostring(i)
-    slotBtn.LayoutOrder = i
-    slotBtn.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
-    slotBtn.BorderSizePixel = 0
-    slotBtn.AutoButtonColor = false
-    slotBtn.Text = ""
-    slotBtn.Parent = gridContainer
-
-    local sCorner = Instance.new("UICorner")
-    sCorner.CornerRadius = UDim.new(0, 8)
-    sCorner.Parent = slotBtn
-
-    local sStroke = Instance.new("UIStroke")
-    sStroke.Name = "BorderStroke"
-    sStroke.Color = Color3.fromRGB(51, 65, 85)
-    sStroke.Thickness = 1
-    sStroke.Parent = slotBtn
-
-    local indexLabel = Instance.new("TextLabel")
-    indexLabel.Name = "IndexNum"
-    indexLabel.Size = UDim2.new(0, 16, 0, 14)
-    indexLabel.Position = UDim2.new(0, 4, 0, 2)
-    indexLabel.BackgroundTransparency = 1
-    indexLabel.Font = Enum.Font.Gotham
-    indexLabel.Text = tostring(i)
-    indexLabel.TextColor3 = Color3.fromRGB(100, 116, 139)
-    indexLabel.TextSize = 9
-    indexLabel.Parent = slotBtn
-
-    local iconLabel = Instance.new("TextLabel")
-    iconLabel.Name = "IconLabel"
-    iconLabel.Size = UDim2.new(1, 0, 0, 26)
-    iconLabel.Position = UDim2.new(0, 0, 0, 12)
-    iconLabel.BackgroundTransparency = 1
-    iconLabel.Font = Enum.Font.GothamBold
-    iconLabel.TextSize = 20
-    iconLabel.Text = ""
-    iconLabel.Parent = slotBtn
-
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.Name = "ItemName"
-    nameLabel.Size = UDim2.new(1, -6, 0, 20)
-    nameLabel.Position = UDim2.new(0, 3, 0, 38)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Font = Enum.Font.GothamMedium
-    nameLabel.TextSize = 9
-    nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    nameLabel.TextColor3 = Color3.fromRGB(241, 245, 249)
-    nameLabel.Text = ""
-    nameLabel.Parent = slotBtn
-
-    -- Pill badge for Quantity
-    local qtyBadge = Instance.new("Frame")
-    qtyBadge.Name = "QtyBadge"
-    qtyBadge.Size = UDim2.new(0, 26, 0, 14)
-    qtyBadge.Position = UDim2.new(1, -28, 1, -16)
-    qtyBadge.BackgroundColor3 = Color3.fromRGB(11, 15, 25)
-    qtyBadge.BorderSizePixel = 0
-    qtyBadge.Visible = false
-    qtyBadge.Parent = slotBtn
-
-    local qCorner = Instance.new("UICorner")
-    qCorner.CornerRadius = UDim.new(0, 4)
-    qCorner.Parent = qtyBadge
-
-    local qtyLabel = Instance.new("TextLabel")
-    qtyLabel.Name = "ItemQty"
-    qtyLabel.Size = UDim2.new(1, 0, 1, 0)
-    qtyLabel.BackgroundTransparency = 1
-    qtyLabel.Font = Enum.Font.GothamBold
-    qtyLabel.TextSize = 9
-    qtyLabel.TextColor3 = Color3.fromRGB(56, 189, 248)
-    qtyLabel.Text = ""
-    qtyLabel.Parent = qtyBadge
-
-    slotBtn.MouseButton1Click:Connect(function()
-        selectedSlotIndex = i
-
-        -- Clear selection outlines
-        for j = 1, 30 do
-            local f = slotFrames[j]
-            local st = f and f:FindFirstChild("BorderStroke") :: UIStroke?
-            if st and j ~= i then
-                if currentProfile and currentProfile.Slots[j] then
-                    local d = ItemDatabase.GetItem(currentProfile.Slots[j].ItemId)
-                    st.Color = d and ItemDatabase.GetRarityColor(d.Rarity) or Color3.fromRGB(51, 65, 85)
-                    st.Thickness = 1
-                else
-                    st.Color = Color3.fromRGB(51, 65, 85)
-                    st.Thickness = 1
-                end
-            end
-        end
-
-        sStroke.Color = Color3.fromRGB(255, 255, 255)
-        sStroke.Thickness = 2
-
-        if currentProfile and currentProfile.Slots[i] then
-            local slotData = currentProfile.Slots[i]
-            local def = ItemDatabase.GetItem(slotData.ItemId)
-            if def then
-                local statDesc = ""
-                if def.Stats.Damage then statDesc ..= string.format(" • ⚔️ +%d Damage", def.Stats.Damage) end
-                if def.Stats.Defense then statDesc ..= string.format(" • 🛡️ +%d Defense", def.Stats.Defense) end
-                if def.Stats.SpeedBoost then statDesc ..= string.format(" • ⚡ +%d Speed", def.Stats.SpeedBoost) end
-                if def.Stats.HealAmount then statDesc ..= string.format(" • 💚 +%d HP", def.Stats.HealAmount) end
-
-                local hex = ItemDatabase.GetRarityColor(def.Rarity):ToHex()
-                actionInfo.Text = string.format("<b>%s %s</b> [<font color=\"#%s\">%s</font>]%s\n%s (x%d)",
-                    def.IconGlyph, def.Name, hex, string.upper(def.Rarity), statDesc, def.Category, slotData.Quantity)
-
-                equipBtn.Visible = (def.EquipSlot ~= nil)
-                useBtn.Visible = (def.Category == "Consumable")
-                splitBtn.Visible = (slotData.Quantity > 1)
-                dropBtn.Visible = true
-            end
-        else
-            actionInfo.Text = string.format("Slot %d: Empty (Ready for loot)", i)
-            actionInfo.TextColor3 = Color3.fromRGB(148, 163, 184)
-            equipBtn.Visible = false
-            useBtn.Visible = false
-            splitBtn.Visible = false
-            dropBtn.Visible = false
-        end
-    end)
-
-    slotFrames[i] = slotBtn
-end
-
--- Create 5 Hotbar Slots
-for i = 1, 5 do
-    local hSlot = Instance.new("TextButton")
-    hSlot.Name = "Hotbar_" .. tostring(i)
-    hSlot.Size = UDim2.new(0, 56, 0, 54)
-    hSlot.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
-    hSlot.BorderSizePixel = 0
-    hSlot.Text = ""
-    hSlot.AutoButtonColor = false
-    hSlot.Parent = hotbar
-
-    local hCorner = Instance.new("UICorner")
-    hCorner.CornerRadius = UDim.new(0, 8)
-    hCorner.Parent = hSlot
-
-    local hStroke = Instance.new("UIStroke")
-    hStroke.Name = "BorderStroke"
-    hStroke.Color = Color3.fromRGB(51, 65, 85)
-    hStroke.Thickness = 1.2
-    hStroke.Parent = hSlot
-
-    local numTag = Instance.new("TextLabel")
-    numTag.Size = UDim2.new(0, 14, 0, 12)
-    numTag.Position = UDim2.new(0, 4, 0, 2)
-    numTag.BackgroundTransparency = 1
-    numTag.Font = Enum.Font.GothamBold
-    numTag.Text = tostring(i)
-    numTag.TextColor3 = Color3.fromRGB(56, 189, 248)
-    numTag.TextSize = 10
-    numTag.Parent = hSlot
-
-    local hIcon = Instance.new("TextLabel")
-    hIcon.Name = "IconLabel"
-    hIcon.Size = UDim2.new(1, 0, 0, 22)
-    hIcon.Position = UDim2.new(0, 0, 0, 12)
-    hIcon.BackgroundTransparency = 1
-    hIcon.Font = Enum.Font.GothamBold
-    hIcon.TextSize = 16
-    hIcon.Text = ""
-    hIcon.Parent = hSlot
-
-    local hName = Instance.new("TextLabel")
-    hName.Name = "ItemName"
-    hName.Size = UDim2.new(1, -4, 0, 14)
-    hName.Position = UDim2.new(0, 2, 0, 36)
-    hName.BackgroundTransparency = 1
-    hName.Font = Enum.Font.GothamMedium
-    hName.TextSize = 8
-    hName.TextTruncate = Enum.TextTruncate.AtEnd
-    hName.TextColor3 = Color3.fromRGB(241, 245, 249)
-    hName.Text = ""
-    hName.Parent = hSlot
-
-    local hQtyBadge = Instance.new("Frame")
-    hQtyBadge.Name = "QtyBadge"
-    hQtyBadge.Size = UDim2.new(0, 22, 0, 12)
-    hQtyBadge.Position = UDim2.new(1, -24, 0, 2)
-    hQtyBadge.BackgroundColor3 = Color3.fromRGB(11, 15, 25)
-    hQtyBadge.BorderSizePixel = 0
-    hQtyBadge.Visible = false
-    hQtyBadge.Parent = hSlot
-
-    local hQCorner = Instance.new("UICorner")
-    hQCorner.CornerRadius = UDim.new(0, 3)
-    hQCorner.Parent = hQtyBadge
-
-    local hQty = Instance.new("TextLabel")
-    hQty.Name = "ItemQty"
-    hQty.Size = UDim2.new(1, 0, 1, 0)
-    hQty.BackgroundTransparency = 1
-    hQty.Font = Enum.Font.GothamBold
-    hQty.TextSize = 8
-    hQty.TextColor3 = Color3.fromRGB(56, 189, 248)
-    hQty.Text = ""
-    hQty.Parent = hQtyBadge
-
-    hotbarFrames[i] = hSlot
-end
-
--- Refresh UI from Profile
-local function RenderInventory()
-    if not currentProfile then return end
-
-    local filledSlots = 0
-
-    -- Update Grid Slots
-    for i = 1, 30 do
-        local frame = slotFrames[i]
-        local iconLabel = frame:FindFirstChild("IconLabel") :: TextLabel
-        local nameLabel = frame:FindFirstChild("ItemName") :: TextLabel
-        local qtyBadge = frame:FindFirstChild("QtyBadge") :: Frame
-        local qtyLabel = qtyBadge and qtyBadge:FindFirstChild("ItemQty") :: TextLabel
-        local stroke = frame:FindFirstChild("BorderStroke") :: UIStroke
-
-        local slotData = currentProfile.Slots[i]
-        if slotData then
-            filledSlots += 1
-            local def = ItemDatabase.GetItem(slotData.ItemId)
-            if def then
-                iconLabel.Text = def.IconGlyph
-                nameLabel.Text = def.Name
-                if slotData.Quantity > 1 then
-                    qtyBadge.Visible = true
-                    qtyLabel.Text = "x" .. tostring(slotData.Quantity)
-                else
-                    qtyBadge.Visible = false
-                end
-                stroke.Color = ItemDatabase.GetRarityColor(def.Rarity)
-            end
-        else
-            iconLabel.Text = ""
-            nameLabel.Text = ""
-            if qtyBadge then qtyBadge.Visible = false end
-            stroke.Color = Color3.fromRGB(51, 65, 85)
-        end
-    end
-
-    -- Update Capacity Pill in Header
-    capPillLabel.Text = string.format("SLOTS: %d / 30", filledSlots)
-    if filledSlots >= 30 then
-        capPillLabel.TextColor3 = Color3.fromRGB(248, 113, 113)
-        capPill.BackgroundColor3 = Color3.fromRGB(69, 10, 10)
-    elseif filledSlots >= 24 then
-        capPillLabel.TextColor3 = Color3.fromRGB(245, 158, 11)
-        capPill.BackgroundColor3 = Color3.fromRGB(55, 35, 10)
-    else
-        capPillLabel.TextColor3 = Color3.fromRGB(56, 189, 248)
-        capPill.BackgroundColor3 = Color3.fromRGB(24, 33, 50)
-    end
-
-    -- Update Hotbar Slots (Mirrors Slots 1 to 5)
-    for i = 1, 5 do
-        local hFrame = hotbarFrames[i]
-        local hIcon = hFrame:FindFirstChild("IconLabel") :: TextLabel
-        local hName = hFrame:FindFirstChild("ItemName") :: TextLabel
-        local hBadge = hFrame:FindFirstChild("QtyBadge") :: Frame
-        local hQty = hBadge and hBadge:FindFirstChild("ItemQty") :: TextLabel
-        local stroke = hFrame:FindFirstChild("BorderStroke") :: UIStroke
-
-        local slotData = currentProfile.Slots[i]
-        if slotData then
-            local def = ItemDatabase.GetItem(slotData.ItemId)
-            if def then
-                hIcon.Text = def.IconGlyph
-                hName.Text = def.Name
-                if slotData.Quantity > 1 then
-                    hBadge.Visible = true
-                    hQty.Text = "x" .. tostring(slotData.Quantity)
-                else
-                    hBadge.Visible = false
-                end
-                stroke.Color = ItemDatabase.GetRarityColor(def.Rarity)
-            end
-        else
-            hIcon.Text = ""
-            hName.Text = ""
-            if hBadge then hBadge.Visible = false end
-            stroke.Color = Color3.fromRGB(51, 65, 85)
-        end
-    end
-
-    -- Update Equipment Slot Display
-    local weapon = currentProfile.Equipment.Weapon
-    local armor = currentProfile.Equipment.Armor
-
-    if weapon then
-        local def = ItemDatabase.GetItem(weapon.ItemId)
-        weaponIcon.Text = def and def.IconGlyph or "⚔️"
-        weaponTitle.Text = def and def.Name or "Equipped Weapon"
-        weaponTitle.TextColor3 = def and ItemDatabase.GetRarityColor(def.Rarity) or Color3.fromRGB(56, 189, 248)
-        local wStat = ""
-        if def and def.Stats.Damage then wStat ..= string.format("+%d Damage", def.Stats.Damage) end
-        if def and def.Stats.SpeedBoost then wStat ..= string.format(" | +%d Speed", def.Stats.SpeedBoost) end
-        weaponStats.Text = wStat ~= "" and wStat or "Active Equipment"
-        unequipWeaponBtn.Visible = true
-    else
-        weaponIcon.Text = "⚔️"
-        weaponTitle.Text = "No Weapon"
-        weaponTitle.TextColor3 = Color3.fromRGB(148, 163, 184)
-        weaponStats.Text = "Select weapon to equip"
-        unequipWeaponBtn.Visible = false
-    end
-
-    if armor then
-        local def = ItemDatabase.GetItem(armor.ItemId)
-        armorIcon.Text = def and def.IconGlyph or "🛡️"
-        armorTitle.Text = def and def.Name or "Equipped Shield"
-        armorTitle.TextColor3 = def and ItemDatabase.GetRarityColor(def.Rarity) or Color3.fromRGB(168, 85, 247)
-        local aStat = ""
-        if def and def.Stats.Defense then aStat ..= string.format("+%d Defense AP", def.Stats.Defense) end
-        armorStats.Text = aStat ~= "" and aStat or "Active Equipment"
-        unequipArmorBtn.Visible = true
-    else
-        armorIcon.Text = "🛡️"
-        armorTitle.Text = "No Shield / Armor"
-        armorTitle.TextColor3 = Color3.fromRGB(148, 163, 184)
-        armorStats.Text = "Select shield to equip"
-        unequipArmorBtn.Visible = false
-    end
-
-    -- Update Stats Summary
-    local totalDmg = weapon and ItemDatabase.GetItem(weapon.ItemId) and ItemDatabase.GetItem(weapon.ItemId).Stats.Damage or 0
-    local totalDef = armor and ItemDatabase.GetItem(armor.ItemId) and ItemDatabase.GetItem(armor.ItemId).Stats.Defense or 0
-    local char = localPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    local curSpeed = hum and hum.WalkSpeed or 16
-
-    statsText.Text = string.format(
-        "<b>📊 OPERATIONAL METRICS</b>\n\n• ⚡ <b>WalkSpeed:</b> %d studs/s\n• ⚔️ <b>Attack Power:</b> %d DP\n• 🛡️ <b>Shield Armor:</b> %d AP\n• 🔒 <b>Session Lock:</b> <font color=\"#10B981\">Enforced (Anti-Dupe)</font>",
-        curSpeed, totalDmg, totalDef
-    )
-end
-
--- Wire Action Buttons
-equipBtn.MouseButton1Click:Connect(function()
-    if not selectedSlotIndex or not currentProfile then return end
-    local slotData = currentProfile.Slots[selectedSlotIndex]
-    if not slotData then return end
-    local def = ItemDatabase.GetItem(slotData.ItemId)
-    if def and def.EquipSlot then
-        EquipItemEvent:FireServer(selectedSlotIndex, def.EquipSlot)
-    end
-end)
-
-useBtn.MouseButton1Click:Connect(function()
-    if not selectedSlotIndex then return end
-    UseItemEvent:FireServer(selectedSlotIndex)
-end)
-
-splitBtn.MouseButton1Click:Connect(function()
-    if not selectedSlotIndex or not currentProfile then return end
-    local slotData = currentProfile.Slots[selectedSlotIndex]
-    if slotData and slotData.Quantity > 1 then
-        local half = math.floor(slotData.Quantity / 2)
-        SplitStackEvent:FireServer(selectedSlotIndex, half)
-    end
-end)
-
-dropBtn.MouseButton1Click:Connect(function()
-    if not selectedSlotIndex then return end
-    DropItemEvent:FireServer(selectedSlotIndex)
-end)
-
-unequipWeaponBtn.MouseButton1Click:Connect(function()
-    UnequipItemEvent:FireServer("Weapon")
-end)
-
-unequipArmorBtn.MouseButton1Click:Connect(function()
-    UnequipItemEvent:FireServer("Armor")
-end)
+demoBtn.Text = "🎁 KIT"
+demoBtn.TextColor3 = Color3.fromRGB(15, 23, 42)
+demoBtn.TextSize = 11
+demoBtn.ZIndex = 25
+demoBtn.Parent = controlRow
+Instance.new("UICorner", demoBtn).CornerRadius = UDim.new(0, 6)
 
 demoBtn.MouseButton1Click:Connect(function()
     AdminGiveDemoItemsEvent:FireServer()
 end)
 
--- Toggle Window Function
+-- =========================================================================
+-- 6-COLUMN BEVELED GRID SCROLL FRAME (MATCHING ARTSTATION REFERENCE)
+-- =========================================================================
+local gridScroll = Instance.new("ScrollingFrame")
+gridScroll.Name = "GridScroll"
+gridScroll.Size = UDim2.new(1, -32, 0, 340)
+gridScroll.Position = UDim2.new(0, 16, 0, 88)
+gridScroll.BackgroundTransparency = 1
+gridScroll.BorderSizePixel = 0
+gridScroll.ScrollBarThickness = 4
+gridScroll.ScrollBarImageColor3 = Color3.fromRGB(56, 189, 248)
+gridScroll.ZIndex = 23
+gridScroll.Parent = innerPanel
+
+local gridLayout = Instance.new("UIGridLayout")
+gridLayout.CellSize = UDim2.new(0, 78, 0, 78) -- 6 columns inside 520px
+gridLayout.CellPadding = UDim2.new(0, 10, 0, 10)
+gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+gridLayout.Parent = gridScroll
+
+-- =========================================================================
+-- TACTILE ITEM INSPECTOR DRAWER (AT BOTTOM OF INVENTORY)
+-- =========================================================================
+local inspectorDrawer = Instance.new("Frame")
+inspectorDrawer.Name = "InspectorDrawer"
+inspectorDrawer.Size = UDim2.new(1, -32, 0, 80)
+inspectorDrawer.Position = UDim2.new(0, 16, 1, -92)
+inspectorDrawer.BackgroundColor3 = Color3.fromRGB(20, 28, 42)
+inspectorDrawer.BorderSizePixel = 0
+inspectorDrawer.ZIndex = 24
+inspectorDrawer.Parent = innerPanel
+Instance.new("UICorner", inspectorDrawer).CornerRadius = UDim.new(0, 8)
+
+local inspStroke = Instance.new("UIStroke")
+inspStroke.Color = Color3.fromRGB(42, 56, 78)
+inspStroke.Thickness = 1.4
+inspStroke.Parent = inspectorDrawer
+
+local inspIcon = Instance.new("TextLabel")
+inspIcon.Name = "Icon"
+inspIcon.Size = UDim2.new(0, 50, 0, 50)
+inspIcon.Position = UDim2.new(0, 14, 0.5, -25)
+inspIcon.BackgroundColor3 = Color3.fromRGB(15, 22, 34)
+inspIcon.Font = Enum.Font.GothamBold
+inspIcon.Text = "⚔️"
+inspIcon.TextSize = 26
+inspIcon.ZIndex = 25
+inspIcon.Parent = inspectorDrawer
+Instance.new("UICorner", inspIcon).CornerRadius = UDim.new(0, 8)
+
+local inspName = Instance.new("TextLabel")
+inspName.Name = "ItemName"
+inspName.Size = UDim2.new(0, 220, 0, 22)
+inspName.Position = UDim2.new(0, 74, 0, 14)
+inspName.BackgroundTransparency = 1
+inspName.Font = Enum.Font.GothamBold
+inspName.Text = "Select an item..."
+inspName.TextColor3 = Color3.fromRGB(241, 245, 249)
+inspName.TextSize = 14
+inspName.TextXAlignment = Enum.TextXAlignment.Left
+inspName.ZIndex = 25
+inspName.Parent = inspectorDrawer
+
+local inspDesc = Instance.new("TextLabel")
+inspDesc.Name = "ItemDesc"
+inspDesc.Size = UDim2.new(0, 220, 0, 32)
+inspDesc.Position = UDim2.new(0, 74, 0, 36)
+inspDesc.BackgroundTransparency = 1
+inspDesc.Font = Enum.Font.GothamMedium
+inspDesc.Text = "Click any inventory slot to view details, equip, or drop."
+inspDesc.TextColor3 = Color3.fromRGB(148, 163, 184)
+inspDesc.TextSize = 11
+inspDesc.TextXAlignment = Enum.TextXAlignment.Left
+inspDesc.TextWrapped = true
+inspDesc.ZIndex = 25
+inspDesc.Parent = inspectorDrawer
+
+-- Action Buttons in Inspector (Gummy Tactile Buttons)
+local inspActionBtn = Instance.new("TextButton")
+inspActionBtn.Name = "EquipActionBtn"
+inspActionBtn.Size = UDim2.new(0, 100, 0, 36)
+inspActionBtn.Position = UDim2.new(1, -215, 0.5, -18)
+inspActionBtn.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
+inspActionBtn.BorderSizePixel = 0
+inspActionBtn.Font = Enum.Font.GothamBold
+inspActionBtn.Text = "EQUIP"
+inspActionBtn.TextColor3 = Color3.fromRGB(15, 23, 42)
+inspActionBtn.TextSize = 12
+inspActionBtn.Visible = false
+inspActionBtn.ZIndex = 26
+inspActionBtn.Parent = inspectorDrawer
+Instance.new("UICorner", inspActionBtn).CornerRadius = UDim.new(0, 6)
+
+local inspDropBtn = Instance.new("TextButton")
+inspDropBtn.Name = "DropActionBtn"
+inspDropBtn.Size = UDim2.new(0, 90, 0, 36)
+inspDropBtn.Position = UDim2.new(1, -105, 0.5, -18)
+inspDropBtn.BackgroundColor3 = Color3.fromRGB(220, 38, 38)
+inspDropBtn.BorderSizePixel = 0
+inspDropBtn.Font = Enum.Font.GothamBold
+inspDropBtn.Text = "DROP"
+inspDropBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+inspDropBtn.TextSize = 12
+inspDropBtn.Visible = false
+inspDropBtn.ZIndex = 26
+inspDropBtn.Parent = inspectorDrawer
+Instance.new("UICorner", inspDropBtn).CornerRadius = UDim.new(0, 6)
+
+-- =========================================================================
+-- BOTTOM HOTBAR (MATCHING ARTSTATION METALLIC LOWER CHASSIS)
+-- =========================================================================
+local hotbarContainer = Instance.new("Frame")
+hotbarContainer.Name = "BottomHotbarChassis"
+hotbarContainer.Size = UDim2.new(0, 480, 0, 108)
+hotbarContainer.Position = UDim2.new(0.5, -240, 1, -120)
+hotbarContainer.BackgroundColor3 = Color3.fromRGB(28, 36, 50)
+hotbarContainer.BorderSizePixel = 0
+hotbarContainer.ZIndex = 10
+hotbarContainer.Parent = screenGui
+Instance.new("UICorner", hotbarContainer).CornerRadius = UDim.new(0, 12)
+
+local hotbarStroke = Instance.new("UIStroke")
+hotbarStroke.Color = Color3.fromRGB(55, 72, 98)
+hotbarStroke.Thickness = 2
+hotbarStroke.Parent = hotbarContainer
+
+-- Upper Hotbar Status Row (Credits & Slot Counter Pills)
+local statusRow = Instance.new("Frame")
+statusRow.Name = "StatusRow"
+statusRow.Size = UDim2.new(1, -20, 0, 24)
+statusRow.Position = UDim2.new(0, 10, 0, 8)
+statusRow.BackgroundTransparency = 1
+statusRow.ZIndex = 11
+statusRow.Parent = hotbarContainer
+
+local energyPill = Instance.new("TextLabel")
+energyPill.Name = "EnergyPill"
+energyPill.Size = UDim2.new(0, 130, 1, 0)
+energyPill.Position = UDim2.new(0, 0, 0, 0)
+energyPill.BackgroundColor3 = Color3.fromRGB(16, 26, 38)
+energyPill.Font = Enum.Font.GothamBold
+energyPill.Text = "💎 12,500 CR"
+energyPill.TextColor3 = Color3.fromRGB(56, 189, 248)
+energyPill.TextSize = 11
+energyPill.ZIndex = 12
+energyPill.Parent = statusRow
+Instance.new("UICorner", energyPill).CornerRadius = UDim.new(0, 6)
+
+local slotCapPill = Instance.new("TextLabel")
+slotCapPill.Name = "SlotCapPill"
+slotCapPill.Size = UDim2.new(0, 130, 1, 0)
+slotCapPill.Position = UDim2.new(1, -130, 0, 0)
+slotCapPill.BackgroundColor3 = Color3.fromRGB(16, 26, 38)
+slotCapPill.Font = Enum.Font.GothamBold
+slotCapPill.Text = "🎒 0 / 30 SLOTS"
+slotCapPill.TextColor3 = Color3.fromRGB(245, 158, 11)
+slotCapPill.TextSize = 11
+slotCapPill.ZIndex = 12
+slotCapPill.Parent = statusRow
+Instance.new("UICorner", slotCapPill).CornerRadius = UDim.new(0, 6)
+
+-- 5 Hotbar Slots
+local hotbarSlotRow = Instance.new("Frame")
+hotbarSlotRow.Name = "HotbarSlotRow"
+hotbarSlotRow.Size = UDim2.new(1, -20, 0, 64)
+hotbarSlotRow.Position = UDim2.new(0, 10, 0, 36)
+hotbarSlotRow.BackgroundTransparency = 1
+hotbarSlotRow.ZIndex = 11
+hotbarSlotRow.Parent = hotbarContainer
+
+local hotbarLayout = Instance.new("UIListLayout")
+hotbarLayout.FillDirection = Enum.FillDirection.Horizontal
+hotbarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+hotbarLayout.Padding = UDim.new(0, 12)
+hotbarLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+hotbarLayout.Parent = hotbarSlotRow
+
+-- Top Toggle Inventory Button
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Name = "InventoryToggleBtn"
+toggleBtn.Size = UDim2.new(0, 150, 0, 42)
+toggleBtn.Position = UDim2.new(1, -170, 0, 20)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(22, 30, 44)
+toggleBtn.BorderSizePixel = 0
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.Text = "🎒 INVENTORY [E]"
+toggleBtn.TextColor3 = Color3.fromRGB(56, 189, 248)
+toggleBtn.TextSize = 12
+toggleBtn.AutoButtonColor = false
+toggleBtn.ZIndex = 30
+toggleBtn.Parent = screenGui
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 8)
+
+local toggleStroke = Instance.new("UIStroke")
+toggleStroke.Color = Color3.fromRGB(56, 189, 248)
+toggleStroke.Thickness = 1.4
+toggleStroke.Parent = toggleBtn
+
+-- =========================================================================
+-- SLOT BUILDERS & TACTILE "GOMINOLA" SQUISH / BOUNCE INTERACTION
+-- =========================================================================
+
+local function ApplyTactileBounce(btn: GuiButton)
+    local originalSize = btn.Size
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset + 4, originalSize.Y.Scale, originalSize.Y.Offset + 4)
+        }):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = originalSize
+        }):Play()
+    end)
+    btn.MouseButton1Down:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 4, originalSize.Y.Scale, originalSize.Y.Offset - 4)
+        }):Play()
+    end)
+    btn.MouseButton1Up:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = originalSize
+        }):Play()
+    end)
+end
+
+-- Create 30 Grid Slots (6 columns x 5 rows)
+for i = 1, 30 do
+    local slotCard = Instance.new("TextButton")
+    slotCard.Name = "Slot_" .. i
+    slotCard.Size = UDim2.new(0, 78, 0, 78)
+    slotCard.BackgroundColor3 = Color3.fromRGB(18, 25, 38)
+    slotCard.BorderSizePixel = 0
+    slotCard.AutoButtonColor = false
+    slotCard.Text = ""
+    slotCard.ZIndex = 24
+    slotCard.Parent = gridScroll
+    Instance.new("UICorner", slotCard).CornerRadius = UDim.new(0, 8)
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Name = "BevelStroke"
+    stroke.Color = Color3.fromRGB(40, 52, 74)
+    stroke.Thickness = 1.5
+    stroke.Parent = slotCard
+
+    -- Item Icon
+    local iconLabel = Instance.new("TextLabel")
+    iconLabel.Name = "Icon"
+    iconLabel.Size = UDim2.new(1, 0, 1, 0)
+    iconLabel.BackgroundTransparency = 1
+    iconLabel.Font = Enum.Font.GothamBold
+    iconLabel.TextSize = 28
+    iconLabel.Text = ""
+    iconLabel.ZIndex = 25
+    iconLabel.Parent = slotCard
+
+    -- Stack Count Badge (Bottom-Right Pill)
+    local qtyBadge = Instance.new("TextLabel")
+    qtyBadge.Name = "QtyBadge"
+    qtyBadge.Size = UDim2.new(0, 26, 0, 16)
+    qtyBadge.Position = UDim2.new(1, -28, 1, -18)
+    qtyBadge.BackgroundColor3 = Color3.fromRGB(10, 14, 22)
+    qtyBadge.Font = Enum.Font.GothamBold
+    qtyBadge.Text = ""
+    qtyBadge.TextColor3 = Color3.fromRGB(241, 245, 249)
+    qtyBadge.TextSize = 10
+    qtyBadge.Visible = false
+    qtyBadge.ZIndex = 26
+    qtyBadge.Parent = slotCard
+    Instance.new("UICorner", qtyBadge).CornerRadius = UDim.new(0, 4)
+
+    -- Equipped Indicator (Top-Right Green Pill)
+    local eqBadge = Instance.new("TextLabel")
+    eqBadge.Name = "EqBadge"
+    eqBadge.Size = UDim2.new(0, 28, 0, 14)
+    eqBadge.Position = UDim2.new(1, -30, 0, 4)
+    eqBadge.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
+    eqBadge.Font = Enum.Font.GothamBold
+    eqBadge.Text = "EQ"
+    eqBadge.TextColor3 = Color3.fromRGB(15, 23, 42)
+    eqBadge.TextSize = 9
+    eqBadge.Visible = false
+    eqBadge.ZIndex = 26
+    eqBadge.Parent = slotCard
+    Instance.new("UICorner", eqBadge).CornerRadius = UDim.new(0, 4)
+
+    ApplyTactileBounce(slotCard)
+    slotFrames[i] = slotCard
+end
+
+-- Create 5 Hotbar Slots
+for i = 1, 5 do
+    local hbSlot = Instance.new("TextButton")
+    hbSlot.Name = "HBSlot_" .. i
+    hbSlot.Size = UDim2.new(0, 64, 0, 64)
+    hbSlot.BackgroundColor3 = Color3.fromRGB(18, 25, 38)
+    hbSlot.BorderSizePixel = 0
+    hbSlot.AutoButtonColor = false
+    hbSlot.Text = ""
+    hbSlot.ZIndex = 12
+    hbSlot.Parent = hotbarSlotRow
+    Instance.new("UICorner", hbSlot).CornerRadius = UDim.new(0, 8)
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Name = "BevelStroke"
+    stroke.Color = Color3.fromRGB(45, 60, 84)
+    stroke.Thickness = 1.5
+    stroke.Parent = hbSlot
+
+    -- Hotkey Number (Top-Left)
+    local numLabel = Instance.new("TextLabel")
+    numLabel.Size = UDim2.new(0, 16, 0, 16)
+    numLabel.Position = UDim2.new(0, 4, 0, 4)
+    numLabel.BackgroundTransparency = 1
+    numLabel.Font = Enum.Font.GothamBold
+    numLabel.Text = tostring(i)
+    numLabel.TextColor3 = Color3.fromRGB(148, 163, 184)
+    numLabel.TextSize = 11
+    numLabel.ZIndex = 14
+    numLabel.Parent = hbSlot
+
+    -- Icon
+    local iconLabel = Instance.new("TextLabel")
+    iconLabel.Name = "Icon"
+    iconLabel.Size = UDim2.new(1, 0, 1, 0)
+    iconLabel.BackgroundTransparency = 1
+    iconLabel.Font = Enum.Font.GothamBold
+    iconLabel.TextSize = 24
+    iconLabel.Text = ""
+    iconLabel.ZIndex = 13
+    iconLabel.Parent = hbSlot
+
+    -- Stack Badge
+    local qtyBadge = Instance.new("TextLabel")
+    qtyBadge.Name = "QtyBadge"
+    qtyBadge.Size = UDim2.new(0, 24, 0, 14)
+    qtyBadge.Position = UDim2.new(1, -26, 1, -16)
+    qtyBadge.BackgroundColor3 = Color3.fromRGB(10, 14, 22)
+    qtyBadge.Font = Enum.Font.GothamBold
+    qtyBadge.Text = ""
+    qtyBadge.TextColor3 = Color3.fromRGB(241, 245, 249)
+    qtyBadge.TextSize = 9
+    qtyBadge.Visible = false
+    qtyBadge.ZIndex = 14
+    qtyBadge.Parent = hbSlot
+    Instance.new("UICorner", qtyBadge).CornerRadius = UDim.new(0, 4)
+
+    -- Active Indicator Badge (Bottom Center)
+    local activeBadge = Instance.new("TextLabel")
+    activeBadge.Name = "ActiveBadge"
+    activeBadge.Size = UDim2.new(0.8, 0, 0, 12)
+    activeBadge.Position = UDim2.new(0.1, 0, 1, -14)
+    activeBadge.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
+    activeBadge.Font = Enum.Font.GothamBold
+    activeBadge.Text = "ACTIVE"
+    activeBadge.TextColor3 = Color3.fromRGB(15, 23, 42)
+    activeBadge.TextSize = 8
+    activeBadge.Visible = false
+    activeBadge.ZIndex = 15
+    activeBadge.Parent = hbSlot
+    Instance.new("UICorner", activeBadge).CornerRadius = UDim.new(0, 3)
+
+    ApplyTactileBounce(hbSlot)
+    hotbarFrames[i] = hbSlot
+end
+
+-- =========================================================================
+-- RENDERING & STATE SYNCHRONIZATION
+-- =========================================================================
+
+local function IsItemEquipped(slot: InventorySlot?): boolean
+    if not slot or not currentProfile or not currentProfile.Equipment then
+        return false
+    end
+    local eqW = currentProfile.Equipment.Weapon
+    local eqA = currentProfile.Equipment.Armor
+    return (eqW and eqW.UUID == slot.UUID) or (eqA and eqA.UUID == slot.UUID) or false
+end
+
+local function UpdateInspector(slotIndex: number?)
+    if not slotIndex or not currentProfile or not currentProfile.Slots[slotIndex] then
+        inspIcon.Text = "📦"
+        inspName.Text = "Select an item..."
+        inspName.TextColor3 = Color3.fromRGB(241, 245, 249)
+        inspDesc.Text = "Click any inventory slot to view stats, equip, or drop."
+        inspActionBtn.Visible = false
+        inspDropBtn.Visible = false
+        return
+    end
+
+    local slot = currentProfile.Slots[slotIndex]
+    local def = ItemDatabase.GetItem(slot.ItemId)
+    if not def then return end
+
+    local color = ItemDatabase.GetRarityColor(def.Rarity)
+    inspIcon.Text = def.IconGlyph
+    inspName.Text = string.format("%s (x%d)", def.Name, slot.Quantity)
+    inspName.TextColor3 = color
+
+    local statsTxt = def.Description
+    if def.Stats.Damage then
+        statsTxt = string.format("⚡ DAMAGE: +%d  •  %s", def.Stats.Damage, statsTxt)
+    elseif def.Stats.Defense then
+        statsTxt = string.format("🛡️ DEFENSE: +%d  •  %s", def.Stats.Defense, statsTxt)
+    elseif def.Stats.HealAmount then
+        statsTxt = string.format("❤️ HEAL: +%d HP  •  %s", def.Stats.HealAmount, statsTxt)
+    end
+    inspDesc.Text = statsTxt
+
+    inspDropBtn.Visible = true
+
+    if def.EquipSlot then
+        inspActionBtn.Visible = true
+        local isEq = IsItemEquipped(slot)
+        if isEq then
+            inspActionBtn.Text = "UNEQUIP"
+            inspActionBtn.BackgroundColor3 = Color3.fromRGB(245, 158, 11)
+        else
+            inspActionBtn.Text = "EQUIP"
+            inspActionBtn.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
+        end
+    elseif def.Category == "Consumable" then
+        inspActionBtn.Visible = true
+        inspActionBtn.Text = "USE"
+        inspActionBtn.BackgroundColor3 = Color3.fromRGB(56, 189, 248)
+    else
+        inspActionBtn.Visible = false
+    end
+end
+
+local function RenderInventory()
+    if not currentProfile then return end
+
+    local usedSlots = 0
+    for i = 1, 30 do
+        if currentProfile.Slots[i] then
+            usedSlots += 1
+        end
+    end
+    slotCapPill.Text = string.format("🎒 %d / 30 SLOTS", usedSlots)
+
+    -- Filter logic
+    local searchLower = string.lower(searchQuery)
+
+    -- Render 30 Main Grid Slots
+    for i = 1, 30 do
+        local frame = slotFrames[i]
+        local slotData = currentProfile.Slots[i]
+        local icon = frame:FindFirstChild("Icon") :: TextLabel
+        local qtyBadge = frame:FindFirstChild("QtyBadge") :: TextLabel
+        local eqBadge = frame:FindFirstChild("EqBadge") :: TextLabel
+        local stroke = frame:FindFirstChild("BevelStroke") :: UIStroke
+
+        if slotData then
+            local def = ItemDatabase.GetItem(slotData.ItemId)
+            local matchesCat = (currentCategoryFilter == "All") or (def and def.Category == currentCategoryFilter)
+            local matchesSearch = (searchLower == "") or (def and string.find(string.lower(def.Name), searchLower) ~= nil)
+
+            if matchesCat and matchesSearch and def then
+                frame.Visible = true
+                icon.Text = def.IconGlyph
+
+                if slotData.Quantity > 1 then
+                    qtyBadge.Text = "x" .. slotData.Quantity
+                    qtyBadge.Visible = true
+                else
+                    qtyBadge.Visible = false
+                end
+
+                local isEq = IsItemEquipped(slotData)
+                eqBadge.Visible = isEq
+
+                if isEq then
+                    stroke.Color = Color3.fromRGB(16, 185, 129)
+                    stroke.Thickness = 2
+                elseif selectedSlotIndex == i then
+                    stroke.Color = Color3.fromRGB(56, 189, 248)
+                    stroke.Thickness = 2
+                else
+                    stroke.Color = Color3.fromRGB(45, 60, 85)
+                    stroke.Thickness = 1.5
+                end
+            else
+                frame.Visible = false
+            end
+        else
+            -- Empty Slot
+            frame.Visible = (currentCategoryFilter == "All" and searchLower == "")
+            icon.Text = ""
+            qtyBadge.Visible = false
+            eqBadge.Visible = false
+            stroke.Color = Color3.fromRGB(30, 40, 56)
+            stroke.Thickness = 1.2
+        end
+    end
+
+    -- Render 5 Hotbar Slots
+    for i = 1, 5 do
+        local frame = hotbarFrames[i]
+        local slotData = currentProfile.Slots[i]
+        local icon = frame:FindFirstChild("Icon") :: TextLabel
+        local qtyBadge = frame:FindFirstChild("QtyBadge") :: TextLabel
+        local activeBadge = frame:FindFirstChild("ActiveBadge") :: TextLabel
+        local stroke = frame:FindFirstChild("BevelStroke") :: UIStroke
+
+        if slotData then
+            local def = ItemDatabase.GetItem(slotData.ItemId)
+            if def then
+                icon.Text = def.IconGlyph
+
+                if slotData.Quantity > 1 then
+                    qtyBadge.Text = "x" .. slotData.Quantity
+                    qtyBadge.Visible = true
+                else
+                    qtyBadge.Visible = false
+                end
+
+                local isEq = IsItemEquipped(slotData)
+                activeBadge.Visible = isEq
+
+                if isEq then
+                    stroke.Color = Color3.fromRGB(56, 189, 248)
+                    stroke.Thickness = 2.2
+                    frame.BackgroundColor3 = Color3.fromRGB(24, 38, 58)
+                else
+                    stroke.Color = Color3.fromRGB(45, 60, 84)
+                    stroke.Thickness = 1.5
+                    frame.BackgroundColor3 = Color3.fromRGB(18, 25, 38)
+                end
+            end
+        else
+            icon.Text = ""
+            qtyBadge.Visible = false
+            activeBadge.Visible = false
+            stroke.Color = Color3.fromRGB(35, 46, 64)
+            stroke.Thickness = 1.2
+            frame.BackgroundColor3 = Color3.fromRGB(18, 25, 38)
+        end
+    end
+
+    UpdateInspector(selectedSlotIndex)
+end
+
+_G.__RenderInventoryFunc = RenderInventory
+
+-- Slot Click Handlers
+for i = 1, 30 do
+    local btn = slotFrames[i]
+    btn.MouseButton1Click:Connect(function()
+        if not currentProfile then return end
+        local slotData = currentProfile.Slots[i]
+        if slotData then
+            selectedSlotIndex = i
+            RenderInventory()
+        end
+    end)
+end
+
+-- Inspector Action Buttons Click
+inspActionBtn.MouseButton1Click:Connect(function()
+    if not selectedSlotIndex or not currentProfile then return end
+    local slot = currentProfile.Slots[selectedSlotIndex]
+    if not slot then return end
+
+    local def = ItemDatabase.GetItem(slot.ItemId)
+    if not def then return end
+
+    if def.EquipSlot then
+        -- Toggle equip on server
+        EquipItemEvent:FireServer(selectedSlotIndex, def.EquipSlot)
+    elseif def.Category == "Consumable" then
+        UseItemEvent:FireServer(selectedSlotIndex)
+    end
+end)
+
+inspDropBtn.MouseButton1Click:Connect(function()
+    if not selectedSlotIndex or not currentProfile then return end
+    DropItemEvent:FireServer(selectedSlotIndex, 1)
+end)
+
+-- Search Input Filter
+searchInput:GetPropertyChangedSignal("Text"):Connect(function()
+    searchQuery = searchInput.Text
+    RenderInventory()
+end)
+
+-- Toggle Inventory Window
 local function ToggleInventory()
     isInventoryOpen = not isInventoryOpen
-    mainWindow.Visible = isInventoryOpen
+    mainContainer.Visible = isInventoryOpen
+
+    if isInventoryOpen then
+        mainContainer.Position = UDim2.new(0.5, -290, 0.5, -240)
+        TweenService:Create(mainContainer, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Position = UDim2.new(0.5, -290, 0.5, -280)
+        }):Play()
+        RenderInventory()
+    end
 end
 
 toggleBtn.MouseButton1Click:Connect(ToggleInventory)
 closeBtn.MouseButton1Click:Connect(ToggleInventory)
 
--- Keybinds (E to open, 1-5 for hotbar)
+-- =========================================================================
+-- KEYBOARD HOTKEY TOGGLING (1..5 QUICK-EQUIP & TOGGLE UNEQUIP)
+-- =========================================================================
+
+local function HandleHotbarKey(slotIndex: number)
+    if not currentProfile then return end
+    local slotData = currentProfile.Slots[slotIndex]
+    if not slotData then return end
+
+    local def = ItemDatabase.GetItem(slotData.ItemId)
+    if not def then return end
+
+    if def.Category == "Consumable" then
+        UseItemEvent:FireServer(slotIndex)
+    elseif def.EquipSlot then
+        -- TOGGLE EQUIP / UNEQUIP ON PRESS!
+        -- If already equipped -> Server will unequip!
+        -- If not equipped -> Server will equip!
+        EquipItemEvent:FireServer(slotIndex, def.EquipSlot)
+    end
+end
+
+-- Hotbar Slot Click Handlers
+for i = 1, 5 do
+    local hbSlot = hotbarFrames[i]
+    hbSlot.MouseButton1Click:Connect(function()
+        HandleHotbarKey(i)
+    end)
+end
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
 
     if input.KeyCode == Enum.KeyCode.E then
         ToggleInventory()
     elseif input.KeyCode == Enum.KeyCode.One then
-        local slotData = currentProfile and currentProfile.Slots[1]
-        if slotData then
-            local def = ItemDatabase.GetItem(slotData.ItemId)
-            if def and def.Category == "Consumable" then
-                UseItemEvent:FireServer(1)
-            elseif def and def.EquipSlot then
-                EquipItemEvent:FireServer(1, def.EquipSlot)
-            end
-        end
+        HandleHotbarKey(1)
     elseif input.KeyCode == Enum.KeyCode.Two then
-        local slotData = currentProfile and currentProfile.Slots[2]
-        if slotData then
-            local def = ItemDatabase.GetItem(slotData.ItemId)
-            if def and def.Category == "Consumable" then
-                UseItemEvent:FireServer(2)
-            elseif def and def.EquipSlot then
-                EquipItemEvent:FireServer(2, def.EquipSlot)
-            end
-        end
+        HandleHotbarKey(2)
     elseif input.KeyCode == Enum.KeyCode.Three then
-        local slotData = currentProfile and currentProfile.Slots[3]
-        if slotData then
-            local def = ItemDatabase.GetItem(slotData.ItemId)
-            if def and def.Category == "Consumable" then
-                UseItemEvent:FireServer(3)
-            elseif def and def.EquipSlot then
-                EquipItemEvent:FireServer(3, def.EquipSlot)
-            end
-        end
+        HandleHotbarKey(3)
     elseif input.KeyCode == Enum.KeyCode.Four then
-        local slotData = currentProfile and currentProfile.Slots[4]
-        if slotData then
-            local def = ItemDatabase.GetItem(slotData.ItemId)
-            if def and def.Category == "Consumable" then
-                UseItemEvent:FireServer(4)
-            elseif def and def.EquipSlot then
-                EquipItemEvent:FireServer(4, def.EquipSlot)
-            end
-        end
+        HandleHotbarKey(4)
     elseif input.KeyCode == Enum.KeyCode.Five then
-        local slotData = currentProfile and currentProfile.Slots[5]
-        if slotData then
-            local def = ItemDatabase.GetItem(slotData.ItemId)
-            if def and def.Category == "Consumable" then
-                UseItemEvent:FireServer(5)
-            elseif def and def.EquipSlot then
-                EquipItemEvent:FireServer(5, def.EquipSlot)
-            end
-        end
+        HandleHotbarKey(5)
     end
 end)
 
@@ -1063,4 +1078,4 @@ SyncProfileEvent.OnClientEvent:Connect(function(profile: InventoryProfile)
     RenderInventory()
 end)
 
-print("⚡ [Inventory Suite] Client Controller & Cyber-Glassmorphic HUD Initialized.")
+print("⚡ [Inventory Suite] ArtStation-Grade Tactile Gominola UI & Hotbar Initialized.")
