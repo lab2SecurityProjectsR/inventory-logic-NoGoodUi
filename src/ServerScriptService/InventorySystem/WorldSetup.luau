@@ -1,8 +1,10 @@
 --!strict
 --[=[
     WorldSetup.luau
+    Author: JV (lab2 / lab2SecurityProjectsR)
     Auto-provisions a clean testing arena, neon spawn pad, atmospheric lighting,
     and initial interactive 3D world drops for demonstration testing.
+    Copyright (c) 2026 JV. All rights reserved.
 ]=]
 
 local Lighting = game:GetService("Lighting")

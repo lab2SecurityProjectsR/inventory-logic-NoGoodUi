@@ -89,7 +89,8 @@ roblox-inventory-suite/
 
 ## 📜 License & Intellectual Property
 
-**Copyright © 2026. All Rights Reserved.**
+**Author:** JV (`lab2` / `lab2SecurityProjectsR`)  
+**Copyright:** © 2026 JV. All Rights Reserved.
 
 This repository and its codebase are published strictly as a **technical portfolio showcase and professional evaluation sample** (including HiddenDevs skill accreditation and client review).
 

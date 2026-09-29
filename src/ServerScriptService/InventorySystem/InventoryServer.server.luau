@@ -1,9 +1,11 @@
 --!strict
 --[=[
     InventoryServer.server.luau
+    Author: JV (lab2 / lab2SecurityProjectsR)
     Master Server-Side Orchestrator for the Inventory & Equipment Suite.
     Enforces strict zero-client-trust validation, atomic state mutations,
     and event routing for hotbar, equipment, item consumption, and world drops.
+    Copyright (c) 2026 JV. All rights reserved.
 ]=]
 
 local Players = game:GetService("Players")

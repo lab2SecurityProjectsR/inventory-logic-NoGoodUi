@@ -1,7 +1,9 @@
 --!strict
 --[=[
     InventoryTypes.luau
+    Author: JV (lab2 / lab2SecurityProjectsR)
     Core data structure types and schemas for the inventory & equipment framework.
+    Copyright (c) 2026 JV. All rights reserved.
 ]=]
 
 local ItemDatabase = require(script.Parent.ItemDatabase)

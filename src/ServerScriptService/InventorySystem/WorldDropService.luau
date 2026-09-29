@@ -1,8 +1,10 @@
 --!strict
 --[=[
     WorldDropService.luau
+    Author: JV (lab2 / lab2SecurityProjectsR)
     Manages 3D physical world drops, rarity particle auras, proximity collection,
     and server-side distance validation.
+    Copyright (c) 2026 JV. All rights reserved.
 ]=]
 
 local Debris = game:GetService("Debris")

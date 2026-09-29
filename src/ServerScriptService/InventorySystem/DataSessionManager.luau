@@ -1,9 +1,11 @@
 --!strict
 --[=[
     DataSessionManager.luau
+    Author: JV (lab2 / lab2SecurityProjectsR)
     Authoritative Session-Locking Data Store Manager.
     Protects against race-condition item duplication by enforcing atomic ownership locks,
     auto-save intervals, and clean state flushing on player disconnect and server shutdown.
+    Copyright (c) 2026 JV. All rights reserved.
 ]=]
 
 local DataStoreService = game:GetService("DataStoreService")

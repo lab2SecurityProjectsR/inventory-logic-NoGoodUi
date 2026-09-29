@@ -1,9 +1,11 @@
 --!strict
 --[=[
     InventoryController.client.luau
+    Author: JV (lab2 / lab2SecurityProjectsR)
     Cyber-Glassmorphic Client Controller & HUD for the Inventory & Equipment Suite.
     Features drag-and-drop slot operations, 5-slot interactive Hotbar, equipment slots,
     live stat displays, detailed hover tooltips, and a instant demo starter-pack button.
+    Copyright (c) 2026 JV. All rights reserved.
 ]=]
 
 local Players = game:GetService("Players")

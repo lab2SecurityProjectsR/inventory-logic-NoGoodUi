@@ -1,8 +1,10 @@
 --!strict
 --[=[
     ItemDatabase.luau
+    Author: JV (lab2 / lab2SecurityProjectsR)
     Authoritative definitions and static data for all inventory items in the experience.
     Provides strict typing, categorization, rarity grading, and equipment stats.
+    Copyright (c) 2026 JV. All rights reserved.
 ]=]
 
 export type ItemRarity = "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary"

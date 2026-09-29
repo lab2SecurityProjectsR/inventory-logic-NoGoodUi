@@ -1,8 +1,10 @@
 --!strict
 --[=[
     EquipmentService.luau
+    Author: JV (lab2 / lab2SecurityProjectsR)
     Handles visual attachment of equipped weapons and armor to the character model,
     character stat modifiers (WalkSpeed, Defense), and respawn persistence.
+    Copyright (c) 2026 JV. All rights reserved.
 ]=]
 
 local Players = game:GetService("Players")
