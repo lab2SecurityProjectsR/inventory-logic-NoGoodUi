@@ -12,6 +12,12 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
+
+-- Disable default Roblox backpack to prevent conflict with custom HUD
+pcall(function()
+    StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
+end)
 
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui")
