@@ -1,0 +1,7 @@
+# Roblox Studio temporary locks
+*.lock
+*.rbxl.lock
+
+# System files
+.DS_Store
+Thumbs.db

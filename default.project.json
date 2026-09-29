@@ -1,0 +1,27 @@
+{
+  "name": "RobloxInventorySuite",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "InventorySystem": {
+        "$path": "src/ReplicatedStorage/InventorySystem"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "InventorySystem": {
+        "$path": "src/ServerScriptService/InventorySystem"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "InventoryClient": {
+          "$path": "src/StarterPlayer/StarterPlayerScripts/InventoryClient"
+        }
+      }
+    }
+  }
+}
