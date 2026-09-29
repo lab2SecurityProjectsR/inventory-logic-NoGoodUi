@@ -27,6 +27,7 @@ export type ItemDefinition = {
     MaxStack: number,
     Stats: ItemStats,
     Icon: string?,
+    IconGlyph: string,
     EquipSlot: string?, -- "Weapon" | "Armor" | "Offhand"
 }
 
@@ -47,6 +48,7 @@ local Items: { [string]: ItemDefinition } = {
         Rarity = "Legendary",
         MaxStack = 1,
         EquipSlot = "Weapon",
+        IconGlyph = "⚡",
         Stats = { Damage = 75, SpeedBoost = 4 },
     },
     ["cyber_revolver"] = {
@@ -57,6 +59,7 @@ local Items: { [string]: ItemDefinition } = {
         Rarity = "Epic",
         MaxStack = 1,
         EquipSlot = "Weapon",
+        IconGlyph = "🔫",
         Stats = { Damage = 52 },
     },
     ["iron_broadsword"] = {
@@ -67,6 +70,7 @@ local Items: { [string]: ItemDefinition } = {
         Rarity = "Common",
         MaxStack = 1,
         EquipSlot = "Weapon",
+        IconGlyph = "⚔️",
         Stats = { Damage = 22 },
     },
     ["aegis_bulwark"] = {
@@ -77,6 +81,7 @@ local Items: { [string]: ItemDefinition } = {
         Rarity = "Legendary",
         MaxStack = 1,
         EquipSlot = "Armor",
+        IconGlyph = "🛡️",
         Stats = { Defense = 55 },
     },
     ["nano_vest"] = {
@@ -87,6 +92,7 @@ local Items: { [string]: ItemDefinition } = {
         Rarity = "Rare",
         MaxStack = 1,
         EquipSlot = "Armor",
+        IconGlyph = "🦺",
         Stats = { Defense = 28 },
     },
     ["health_stim"] = {
@@ -96,6 +102,7 @@ local Items: { [string]: ItemDefinition } = {
         Category = "Consumable",
         Rarity = "Uncommon",
         MaxStack = 16,
+        IconGlyph = "💉",
         Stats = { HealAmount = 50 },
     },
     ["velocity_elixir"] = {
@@ -105,6 +112,7 @@ local Items: { [string]: ItemDefinition } = {
         Category = "Consumable",
         Rarity = "Rare",
         MaxStack = 8,
+        IconGlyph = "🧪",
         Stats = { SpeedBoost = 14, Duration = 15 },
     },
     ["quantum_core"] = {
@@ -114,6 +122,7 @@ local Items: { [string]: ItemDefinition } = {
         Category = "Material",
         Rarity = "Legendary",
         MaxStack = 99,
+        IconGlyph = "🔮",
         Stats = {},
     },
     ["refined_titanium"] = {
@@ -123,6 +132,7 @@ local Items: { [string]: ItemDefinition } = {
         Category = "Material",
         Rarity = "Uncommon",
         MaxStack = 64,
+        IconGlyph = "🔩",
         Stats = {},
     },
 }

@@ -21,7 +21,7 @@ type InventorySlot = InventoryTypes.InventorySlot
 
 local DATA_VERSION = 1
 local AUTO_SAVE_INTERVAL = 60
-local INVENTORY_CAPACITY = 24
+local INVENTORY_CAPACITY = 30
 
 local DataSessionManager = {}
 local activeProfiles: { [number]: InventoryProfile } = {}

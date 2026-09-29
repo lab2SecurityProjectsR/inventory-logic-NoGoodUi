@@ -47,7 +47,12 @@ local EquipItemEvent = GetOrCreateRemote("EquipItem") :: RemoteEvent
 local UnequipItemEvent = GetOrCreateRemote("UnequipItem") :: RemoteEvent
 local DropItemEvent = GetOrCreateRemote("DropItem") :: RemoteEvent
 local AdminGiveDemoItemsEvent = GetOrCreateRemote("AdminGiveDemoItems") :: RemoteEvent
+local NotificationEvent = GetOrCreateRemote("NotificationEvent") :: RemoteEvent
 local RequestSyncFunction = GetOrCreateRemote("RequestSync", true) :: RemoteFunction
+
+local function SendNotification(player: Player, message: string, alertType: string?)
+    NotificationEvent:FireClient(player, message, alertType or "Info")
+end
 
 local function SendProfileUpdate(player: Player)
     local profile = DataSessionManager.GetProfile(player)
@@ -55,6 +60,7 @@ local function SendProfileUpdate(player: Player)
         SyncProfileEvent:FireClient(player, profile)
     end
 end
+
 
 -- Helper: Find first available empty slot
 local function FindEmptySlot(profile: InventoryProfile): number?
@@ -212,6 +218,7 @@ UseItemEvent.OnServerEvent:Connect(function(player: Player, slotIndex: number)
     -- Apply Consumable Effect
     if itemDef.Stats.HealAmount then
         humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + itemDef.Stats.HealAmount)
+        SendNotification(player, string.format("Consumed %s (+%d HP)", itemDef.Name, itemDef.Stats.HealAmount), "Success")
     end
 
     if itemDef.Stats.SpeedBoost and itemDef.Stats.Duration then
@@ -219,6 +226,7 @@ UseItemEvent.OnServerEvent:Connect(function(player: Player, slotIndex: number)
         local dur = itemDef.Stats.Duration
         local originalSpeed = humanoid.WalkSpeed
         humanoid.WalkSpeed += boost
+        SendNotification(player, string.format("Activated %s (+%d Speed for %ds)", itemDef.Name, boost, dur), "Success")
 
         task.delay(dur, function()
             if humanoid and humanoid.Parent then
@@ -253,6 +261,7 @@ EquipItemEvent.OnServerEvent:Connect(function(player: Player, fromSlot: number, 
     profile.Slots[fromSlot] = currentEquipped -- swap if something was equipped, else nil
 
     EquipmentService.ApplyEquipmentVisual(player, equipSlotType, slot)
+    SendNotification(player, string.format("Equipped %s", itemDef.Name), "Success")
     SendProfileUpdate(player)
 end)
 
@@ -272,15 +281,17 @@ UnequipItemEvent.OnServerEvent:Connect(function(player: Player, equipSlotType: s
     end
 
     if not targetSlot then
-        -- Inventory is full, cannot unequip
+        SendNotification(player, "Inventory is full! Drop or use an item first to unequip.", "Warning")
         return
     end
 
+    local itemDef = ItemDatabase.GetItem(equipped.ItemId)
     equipped.SlotIndex = targetSlot
     profile.Slots[targetSlot] = equipped
     profile.Equipment[equipSlotType] = nil
 
     EquipmentService.ApplyEquipmentVisual(player, equipSlotType, nil)
+    SendNotification(player, string.format("Unequipped %s", itemDef and itemDef.Name or equipSlotType), "Info")
     SendProfileUpdate(player)
 end)
 
@@ -299,6 +310,7 @@ DropItemEvent.OnServerEvent:Connect(function(player: Player, slotIndex: number, 
     local root = char and char:FindFirstChild("HumanoidRootPart")
     if not root then return end
 
+    local itemDef = ItemDatabase.GetItem(slot.ItemId)
     local dropQty = quantity and math.min(slot.Quantity, math.max(1, math.floor(quantity))) or slot.Quantity
 
     slot.Quantity -= dropQty
@@ -308,6 +320,7 @@ DropItemEvent.OnServerEvent:Connect(function(player: Player, slotIndex: number, 
         profile.Slots[slotIndex] = nil
     end
 
+    SendNotification(player, string.format("Dropped %s (x%d)", itemDef and itemDef.Name or droppedItemId, dropQty), "Info")
     SendProfileUpdate(player)
 
     -- Spawn world drop in front of player
@@ -318,10 +331,13 @@ DropItemEvent.OnServerEvent:Connect(function(player: Player, slotIndex: number, 
 
         local added = TryAddItemToProfile(pickerProfile, droppedItemId, dropQty)
         if added then
+            SendNotification(collectingPlayer, string.format("Collected %s (x%d)", itemDef and itemDef.Name or droppedItemId, dropQty), "Success")
             SendProfileUpdate(collectingPlayer)
             return true
+        else
+            SendNotification(collectingPlayer, "Cannot collect: Inventory is full!", "Warning")
+            return false
         end
-        return false
     end)
 end)
 
@@ -334,13 +350,32 @@ AdminGiveDemoItemsEvent.OnServerEvent:Connect(function(player: Player)
         { Id = "plasma_katana", Qty = 1 },
         { Id = "aegis_bulwark", Qty = 1 },
         { Id = "cyber_revolver", Qty = 1 },
-        { Id = "velocity_elixir", Qty = 5 },
-        { Id = "health_stim", Qty = 10 },
-        { Id = "quantum_core", Qty = 25 },
+        { Id = "velocity_elixir", Qty = 3 },
+        { Id = "health_stim", Qty = 5 },
+        { Id = "quantum_core", Qty = 10 },
     }
 
+    local addedCount = 0
     for _, entry in ipairs(demoItems) do
-        TryAddItemToProfile(profile, entry.Id, entry.Qty)
+        -- Only add if player doesn't already have this item to avoid hoarding all slots
+        local exists = false
+        for _, s in pairs(profile.Slots) do
+            if s.ItemId == entry.Id then
+                exists = true
+                break
+            end
+        end
+        if not exists then
+            if TryAddItemToProfile(profile, entry.Id, entry.Qty) then
+                addedCount += 1
+            end
+        end
+    end
+
+    if addedCount > 0 then
+        SendNotification(player, "Added starter gear to inventory!", "Success")
+    else
+        SendNotification(player, "You already have the demo starter items in inventory.", "Info")
     end
 
     SendProfileUpdate(player)
