@@ -629,7 +629,7 @@ local function Populate3DThumbnail(vpf: ViewportFrame, itemId: string, color: Co
     worldModel.Parent = vpf
 
     local camera = Instance.new("Camera")
-    camera.FieldOfView = 36
+    camera.FieldOfView = 38
     camera.Parent = vpf
     vpf.CurrentCamera = camera
 
@@ -637,137 +637,352 @@ local function Populate3DThumbnail(vpf: ViewportFrame, itemId: string, color: Co
     model.Parent = worldModel
 
     if itemId == "plasma_katana" or itemId == "iron_broadsword" then
-        -- 3D Miniature Katana
+        -- DIAGONAL 3D KATANA: Sweeps dynamically from bottom-left to top-right
+        local rotAngle = math.rad(-42)
+        local baseCF = CFrame.Angles(0, 0, rotAngle)
+
+        -- Handle (Tsuka)
         local hilt = Instance.new("Part")
-        hilt.Size = Vector3.new(0.12, 0.6, 0.14)
+        hilt.Size = Vector3.new(0.12, 0.7, 0.14)
         hilt.Material = Enum.Material.DiamondPlate
         hilt.Color = Color3.fromRGB(24, 28, 36)
-        hilt.CFrame = CFrame.new(0, -0.6, 0)
+        hilt.CFrame = baseCF * CFrame.new(0, -0.65, 0)
         hilt.Anchored = true
         hilt.Parent = model
 
+        -- Gold Pommel
+        local pommel = Instance.new("Part")
+        pommel.Size = Vector3.new(0.16, 0.1, 0.18)
+        pommel.Material = Enum.Material.Metal
+        pommel.Color = Color3.fromRGB(220, 180, 50)
+        pommel.CFrame = baseCF * CFrame.new(0, -1.02, 0)
+        pommel.Anchored = true
+        pommel.Parent = model
+
+        -- Layered Tsuba (Guard)
         local guard = Instance.new("Part")
-        guard.Size = Vector3.new(0.42, 0.06, 0.42)
+        guard.Size = Vector3.new(0.44, 0.08, 0.44)
         guard.Material = Enum.Material.Metal
         guard.Color = Color3.fromRGB(220, 180, 50)
-        guard.CFrame = CFrame.new(0, -0.28, 0)
+        guard.CFrame = baseCF * CFrame.new(0, -0.28, 0)
         guard.Anchored = true
         guard.Parent = model
 
+        local guardRing = Instance.new("Part")
+        guardRing.Size = Vector3.new(0.38, 0.1, 0.38)
+        guardRing.Material = Enum.Material.Neon
+        guardRing.Color = color
+        guardRing.CFrame = guard.CFrame
+        guardRing.Anchored = true
+        guardRing.Parent = model
+
+        -- Vibrant Plasma Blade
         local blade = Instance.new("Part")
-        blade.Size = Vector3.new(0.06, 1.8, 0.22)
+        blade.Size = Vector3.new(0.06, 2.1, 0.22)
         blade.Material = Enum.Material.Neon
         blade.Color = color
-        blade.CFrame = CFrame.new(0, 0.65, 0)
+        blade.CFrame = baseCF * CFrame.new(0, 0.75, 0)
         blade.Anchored = true
         blade.Parent = model
 
-        camera.CFrame = CFrame.new(Vector3.new(1.8, 0.35, 2.2), Vector3.new(0, 0.2, 0))
+        -- Dark Titanium Spine
+        local spine = Instance.new("Part")
+        spine.Size = Vector3.new(0.1, 2.1, 0.08)
+        spine.Material = Enum.Material.Metal
+        spine.Color = Color3.fromRGB(50, 60, 75)
+        spine.CFrame = baseCF * CFrame.new(0, 0.75, 0.1)
+        spine.Anchored = true
+        spine.Parent = model
+
+        camera.CFrame = CFrame.new(Vector3.new(0, 0, 2.5), Vector3.new(0, 0, 0))
 
     elseif itemId == "cyber_revolver" then
-        -- 3D Miniature Revolver
+        -- DIAGONAL 3D CYBER REVOLVER: Angled dynamic profile
+        local rotAngle = math.rad(22)
+        local baseCF = CFrame.Angles(0, 0, rotAngle)
+
+        -- Textured Grip
+        local grip = Instance.new("Part")
+        grip.Size = Vector3.new(0.18, 0.6, 0.3)
+        grip.Material = Enum.Material.DiamondPlate
+        grip.Color = Color3.fromRGB(24, 28, 36)
+        grip.CFrame = baseCF * CFrame.new(-0.35, -0.4, 0) * CFrame.Angles(0, 0, math.rad(-15))
+        grip.Anchored = true
+        grip.Parent = model
+
+        -- Receiver Frame
         local frame = Instance.new("Part")
-        frame.Size = Vector3.new(0.18, 0.35, 0.5)
+        frame.Size = Vector3.new(0.24, 0.42, 0.6)
         frame.Material = Enum.Material.Metal
         frame.Color = Color3.fromRGB(50, 60, 75)
-        frame.CFrame = CFrame.new(0, 0, 0)
+        frame.CFrame = baseCF * CFrame.new(-0.1, 0, 0)
         frame.Anchored = true
         frame.Parent = model
 
+        -- Glowing Plasma Cylinder
         local cyl = Instance.new("Part")
-        cyl.Size = Vector3.new(0.22, 0.24, 0.24)
+        cyl.Size = Vector3.new(0.28, 0.32, 0.32)
         cyl.Material = Enum.Material.Neon
         cyl.Color = color
-        cyl.CFrame = CFrame.new(0, 0.02, 0)
+        cyl.CFrame = baseCF * CFrame.new(-0.1, 0, 0)
         cyl.Anchored = true
         cyl.Parent = model
 
+        -- Heavy Barrel
         local barrel = Instance.new("Part")
-        barrel.Size = Vector3.new(0.16, 0.22, 0.8)
+        barrel.Size = Vector3.new(0.18, 0.28, 0.95)
         barrel.Material = Enum.Material.Metal
         barrel.Color = Color3.fromRGB(35, 42, 54)
-        barrel.CFrame = CFrame.new(0, 0.05, -0.6)
+        barrel.CFrame = baseCF * CFrame.new(0.45, 0.05, 0)
         barrel.Anchored = true
         barrel.Parent = model
 
-        camera.CFrame = CFrame.new(Vector3.new(1.4, 0.7, 1.5), Vector3.new(0, 0, -0.2))
+        -- Top Sight Rail
+        local rail = Instance.new("Part")
+        rail.Size = Vector3.new(0.1, 0.08, 1.1)
+        rail.Material = Enum.Material.Neon
+        rail.Color = color
+        rail.CFrame = baseCF * CFrame.new(0.25, 0.22, 0)
+        rail.Anchored = true
+        rail.Parent = model
+
+        camera.CFrame = CFrame.new(Vector3.new(0, 0, 2.4), Vector3.new(0, 0, 0))
+
+    elseif itemId == "nano_vest" then
+        -- TACTICAL CYBER BODY ARMOR (AUTHENTIC VEST PROFILE - NOT A WALL!)
+        -- Contoured Upper Chest
+        local upperChest = Instance.new("Part")
+        upperChest.Size = Vector3.new(1.6, 0.5, 0.38)
+        upperChest.Material = Enum.Material.DiamondPlate
+        upperChest.Color = Color3.fromRGB(24, 28, 38)
+        upperChest.CFrame = CFrame.new(0, 0.35, 0)
+        upperChest.Anchored = true
+        upperChest.Parent = model
+
+        -- Tapered Lower Abdomen
+        local lowerAb = Instance.new("Part")
+        lowerAb.Size = Vector3.new(1.2, 0.65, 0.35)
+        lowerAb.Material = Enum.Material.DiamondPlate
+        lowerAb.Color = Color3.fromRGB(24, 28, 38)
+        lowerAb.CFrame = CFrame.new(0, -0.18, 0)
+        lowerAb.Anchored = true
+        lowerAb.Parent = model
+
+        -- Left Shoulder Pauldron
+        local leftShoulder = Instance.new("Part")
+        leftShoulder.Size = Vector3.new(0.48, 0.35, 0.45)
+        leftShoulder.Material = Enum.Material.Metal
+        leftShoulder.Color = Color3.fromRGB(35, 42, 55)
+        leftShoulder.CFrame = CFrame.new(-0.95, 0.42, 0)
+        leftShoulder.Anchored = true
+        leftShoulder.Parent = model
+
+        local leftTrim = Instance.new("Part")
+        leftTrim.Size = Vector3.new(0.5, 0.08, 0.47)
+        leftTrim.Material = Enum.Material.Neon
+        leftTrim.Color = color
+        leftTrim.CFrame = CFrame.new(-0.95, 0.58, 0)
+        leftTrim.Anchored = true
+        leftTrim.Parent = model
+
+        -- Right Shoulder Pauldron
+        local rightShoulder = Instance.new("Part")
+        rightShoulder.Size = Vector3.new(0.48, 0.35, 0.45)
+        rightShoulder.Material = Enum.Material.Metal
+        rightShoulder.Color = Color3.fromRGB(35, 42, 55)
+        rightShoulder.CFrame = CFrame.new(0.95, 0.42, 0)
+        rightShoulder.Anchored = true
+        rightShoulder.Parent = model
+
+        local rightTrim = Instance.new("Part")
+        rightTrim.Size = Vector3.new(0.5, 0.08, 0.47)
+        rightTrim.Material = Enum.Material.Neon
+        rightTrim.Color = color
+        rightTrim.CFrame = CFrame.new(0.95, 0.58, 0)
+        rightTrim.Anchored = true
+        rightTrim.Parent = model
+
+        -- Arc Reactor Core (ON THE FRONT, FACING CAMERA!)
+        local reactorHousing = Instance.new("Part")
+        reactorHousing.Size = Vector3.new(0.52, 0.52, 0.1)
+        reactorHousing.Material = Enum.Material.Metal
+        reactorHousing.Color = Color3.fromRGB(48, 58, 75)
+        reactorHousing.CFrame = CFrame.new(0, 0.18, -0.22)
+        reactorHousing.Anchored = true
+        reactorHousing.Parent = model
+
+        local reactorCore = Instance.new("Part")
+        reactorCore.Size = Vector3.new(0.38, 0.38, 0.14)
+        reactorCore.Material = Enum.Material.Neon
+        reactorCore.Color = color
+        reactorCore.CFrame = CFrame.new(0, 0.18, -0.26)
+        reactorCore.Anchored = true
+        reactorCore.Parent = model
+
+        -- Left & Right Chest Armor Conduits
+        local condL = Instance.new("Part")
+        condL.Size = Vector3.new(0.48, 0.06, 0.06)
+        condL.Material = Enum.Material.Neon
+        condL.Color = color
+        condL.CFrame = CFrame.new(-0.42, 0.28, -0.23) * CFrame.Angles(0, 0, math.rad(25))
+        condL.Anchored = true
+        condL.Parent = model
+
+        local condR = Instance.new("Part")
+        condR.Size = Vector3.new(0.48, 0.06, 0.06)
+        condR.Material = Enum.Material.Neon
+        condR.Color = color
+        condR.CFrame = CFrame.new(0.42, 0.28, -0.23) * CFrame.Angles(0, 0, math.rad(-25))
+        condR.Anchored = true
+        condR.Parent = model
+
+        -- Camera looking at the FRONT of the vest at an isometric angle
+        camera.CFrame = CFrame.new(Vector3.new(0.35, 0.3, -2.4), Vector3.new(0, 0.1, 0))
 
     elseif itemId == "aegis_bulwark" then
-        -- 3D Miniature Shield
+        -- 3D AEGIS SHIELD (Holographic Energy Barrier)
         local barrier = Instance.new("Part")
-        barrier.Size = Vector3.new(1.4, 1.8, 0.06)
+        barrier.Size = Vector3.new(1.6, 2.0, 0.08)
         barrier.Material = Enum.Material.ForceField
         barrier.Color = color
         barrier.Transparency = 0.25
+        barrier.CFrame = CFrame.new(0, 0, 0)
         barrier.Anchored = true
         barrier.Parent = model
 
+        -- Top & Bottom Bezel Wings
+        local bezT = Instance.new("Part")
+        bezT.Size = Vector3.new(1.7, 0.12, 0.16)
+        bezT.Material = Enum.Material.Neon
+        bezT.Color = color
+        bezT.CFrame = CFrame.new(0, 1.02, 0)
+        bezT.Anchored = true
+        bezT.Parent = model
+
+        local bezB = Instance.new("Part")
+        bezB.Size = Vector3.new(1.7, 0.12, 0.16)
+        bezB.Material = Enum.Material.Neon
+        bezB.Color = color
+        bezB.CFrame = CFrame.new(0, -1.02, 0)
+        bezB.Anchored = true
+        bezB.Parent = model
+
+        -- Hex Generator Core
         local core = Instance.new("Part")
-        core.Size = Vector3.new(0.3, 0.3, 0.12)
+        core.Size = Vector3.new(0.36, 0.36, 0.18)
         core.Material = Enum.Material.Neon
         core.Color = color
+        core.CFrame = CFrame.new(0, 0, 0)
         core.Anchored = true
         core.Parent = model
 
-        camera.CFrame = CFrame.new(Vector3.new(0.8, 0.4, 2.4), Vector3.new(0, 0, 0))
+        local coreFrame = Instance.new("Part")
+        coreFrame.Size = Vector3.new(0.48, 0.48, 0.12)
+        coreFrame.Material = Enum.Material.Metal
+        coreFrame.Color = Color3.fromRGB(35, 44, 58)
+        coreFrame.CFrame = CFrame.new(0, 0, 0)
+        coreFrame.Anchored = true
+        coreFrame.Parent = model
 
-    elseif itemId == "nano_vest" then
-        -- 3D Miniature Vest
-        local chest = Instance.new("Part")
-        chest.Size = Vector3.new(1.4, 1.2, 0.35)
-        chest.Material = Enum.Material.DiamondPlate
-        chest.Color = Color3.fromRGB(24, 28, 38)
-        chest.Anchored = true
-        chest.Parent = model
-
-        local core = Instance.new("Part")
-        core.Size = Vector3.new(0.4, 0.4, 0.12)
-        core.Material = Enum.Material.Neon
-        core.Color = color
-        core.CFrame = CFrame.new(0, 0.1, -0.2)
-        core.Anchored = true
-        core.Parent = model
-
-        camera.CFrame = CFrame.new(Vector3.new(0.8, 0.3, 2.2), Vector3.new(0, 0, 0))
+        camera.CFrame = CFrame.new(Vector3.new(0.4, 0.2, -2.5), Vector3.new(0, 0, 0))
 
     elseif itemId == "health_stim" or itemId == "velocity_elixir" then
-        -- 3D Injector Tube
+        -- DIAGONAL PHARMACEUTICAL STIM INJECTOR
+        local baseCF = CFrame.Angles(0, 0, math.rad(-40))
+
+        -- Glass Barrel
         local tube = Instance.new("Part")
-        tube.Size = Vector3.new(0.32, 1.2, 0.32)
+        tube.Size = Vector3.new(0.32, 1.3, 0.32)
         tube.Material = Enum.Material.ForceField
         tube.Color = color
+        tube.CFrame = baseCF * CFrame.new(0, 0, 0)
         tube.Anchored = true
         tube.Parent = model
 
+        -- Glowing Liquid Core
         local liq = Instance.new("Part")
-        liq.Size = Vector3.new(0.24, 0.9, 0.24)
+        liq.Size = Vector3.new(0.24, 0.95, 0.24)
         liq.Material = Enum.Material.Neon
         liq.Color = color
+        liq.CFrame = baseCF * CFrame.new(0, -0.05, 0)
         liq.Anchored = true
         liq.Parent = model
 
-        camera.CFrame = CFrame.new(Vector3.new(1.1, 0.3, 1.7), Vector3.new(0, 0, 0))
+        -- Chrome Plunger Cap (Top)
+        local cap = Instance.new("Part")
+        cap.Size = Vector3.new(0.44, 0.2, 0.44)
+        cap.Material = Enum.Material.Metal
+        cap.Color = Color3.fromRGB(190, 200, 215)
+        cap.CFrame = baseCF * CFrame.new(0, 0.72, 0)
+        cap.Anchored = true
+        cap.Parent = model
+
+        -- Hypodermic Injector Nozzle (Bottom)
+        local nozzle = Instance.new("Part")
+        nozzle.Size = Vector3.new(0.08, 0.35, 0.08)
+        nozzle.Material = Enum.Material.Metal
+        nozzle.Color = Color3.fromRGB(200, 210, 225)
+        nozzle.CFrame = baseCF * CFrame.new(0, -0.82, 0)
+        nozzle.Anchored = true
+        nozzle.Parent = model
+
+        camera.CFrame = CFrame.new(Vector3.new(0, 0, 2.4), Vector3.new(0, 0, 0))
 
     else
-        -- 3D Quantum Core Crystal
-        local crystal = Instance.new("Part")
-        crystal.Size = Vector3.new(0.85, 1.1, 0.85)
-        crystal.Material = Enum.Material.Glass
-        crystal.Color = color
-        crystal.Transparency = 0.2
-        crystal.CFrame = CFrame.Angles(math.rad(45), 0, math.rad(45))
-        crystal.Anchored = true
-        crystal.Parent = model
-
+        -- QUANTUM CORE: SINGULARITY CORE WITH ORBITAL CONTAINMENT RINGS
+        -- Central Pulsing Core
         local core = Instance.new("Part")
-        core.Size = Vector3.new(0.4, 0.6, 0.4)
+        core.Size = Vector3.new(0.55, 0.55, 0.55)
         core.Material = Enum.Material.Neon
         core.Color = color
-        core.CFrame = crystal.CFrame
+        core.CFrame = CFrame.new(0, 0, 0)
         core.Anchored = true
         core.Parent = model
 
-        camera.CFrame = CFrame.new(Vector3.new(1.3, 0.5, 1.7), Vector3.new(0, 0, 0))
+        local innerLight = Instance.new("Part")
+        innerLight.Size = Vector3.new(0.3, 0.3, 0.3)
+        innerLight.Material = Enum.Material.Neon
+        innerLight.Color = Color3.fromRGB(255, 255, 255)
+        innerLight.CFrame = CFrame.new(0, 0, 0)
+        innerLight.Anchored = true
+        innerLight.Parent = model
+
+        -- Metallic Orbital Gyro Ring 1
+        local ring1 = Instance.new("Part")
+        ring1.Size = Vector3.new(1.3, 0.08, 1.3)
+        ring1.Material = Enum.Material.Metal
+        ring1.Color = Color3.fromRGB(220, 180, 50)
+        ring1.CFrame = CFrame.Angles(math.rad(25), 0, math.rad(30))
+        ring1.Anchored = true
+        ring1.Parent = model
+
+        -- Metallic Orbital Gyro Ring 2
+        local ring2 = Instance.new("Part")
+        ring2.Size = Vector3.new(1.3, 1.3, 0.08)
+        ring2.Material = Enum.Material.Metal
+        ring2.Color = Color3.fromRGB(180, 195, 215)
+        ring2.CFrame = CFrame.Angles(math.rad(-45), math.rad(35), 0)
+        ring2.Anchored = true
+        ring2.Parent = model
+
+        -- 4 Quantum Nodes
+        local node1 = Instance.new("Part")
+        node1.Size = Vector3.new(0.14, 0.14, 0.14)
+        node1.Material = Enum.Material.Neon
+        node1.Color = color
+        node1.CFrame = ring1.CFrame * CFrame.new(0.65, 0, 0)
+        node1.Anchored = true
+        node1.Parent = model
+
+        local node2 = Instance.new("Part")
+        node2.Size = Vector3.new(0.14, 0.14, 0.14)
+        node2.Material = Enum.Material.Neon
+        node2.Color = color
+        node2.CFrame = ring1.CFrame * CFrame.new(-0.65, 0, 0)
+        node2.Anchored = true
+        node2.Parent = model
+
+        camera.CFrame = CFrame.new(Vector3.new(1.3, 0.7, 1.8), Vector3.new(0, 0, 0))
     end
 end
 
