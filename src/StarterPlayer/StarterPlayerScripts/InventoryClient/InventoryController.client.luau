@@ -238,7 +238,7 @@ innerStroke.Parent = innerPanel
 -- Header Title: "MY INVENTORY"
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "TitleLabel"
-titleLabel.Size = UDim2.new(0, 200, 0, 30)
+titleLabel.Size = UDim2.new(0, 140, 0, 30)
 titleLabel.Position = UDim2.new(0, 16, 0, 8)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Font = Enum.Font.GothamBold
@@ -248,6 +248,19 @@ titleLabel.TextSize = 17
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.ZIndex = 24
 titleLabel.Parent = innerPanel
+
+local subTitle = Instance.new("TextLabel")
+subTitle.Name = "BackendDisclaimerLabel"
+subTitle.Size = UDim2.new(0, 260, 0, 30)
+subTitle.Position = UDim2.new(0, 156, 0, 9)
+subTitle.BackgroundTransparency = 1
+subTitle.Font = Enum.Font.GothamMedium
+subTitle.Text = "[ Pure Backend Engine // Functional Test Harness ]"
+subTitle.TextColor3 = Color3.fromRGB(100, 120, 150)
+subTitle.TextSize = 10
+subTitle.TextXAlignment = Enum.TextXAlignment.Left
+subTitle.ZIndex = 24
+subTitle.Parent = innerPanel
 
 -- Close Button (Top-Right X - ASCII safe, no unicode box!)
 local closeBtn = Instance.new("TextButton")

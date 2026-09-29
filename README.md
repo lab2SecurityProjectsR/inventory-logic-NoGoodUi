@@ -8,7 +8,10 @@
 
 An enterprise-grade, modular **Inventory, Equipment, and Data Persistence Suite** for Roblox experiences built on **strict server-authoritative architecture** and **session-locking anti-duplication principles**.
 
-Includes a strongly typed item database, slot-based grid inventory, active equipment system (weapons & armor with visual attachments and live stat modifiers), interactive hotbar (keys 1–5), 3D physical world drops with proximity collection, and a cyber-glassmorphic demonstration HUD.
+> [!NOTE]
+> ### ⚙️ Technical Focus & Portfolio Scope
+> **Specialization: Server-Authoritative Systems, Security & Game Mechanics**  
+> This suite is specifically engineered to demonstrate **pure backend Luau architecture**, atomic inventory state mutations, anti-duplication session-locking, and zero-client-trust network replication. The included user interface is a functional, programmatic testing harness created in code to demonstrate event routing, hotbar keybinds, and equipment state. In a production studio pipeline, this robust backend engine is designed to plug directly into any 2D UI artist's sprite sheets, Figma exports, or design systems with zero friction.
 
 ---
 
@@ -16,9 +19,9 @@ Includes a strongly typed item database, slot-based grid inventory, active equip
 
 * **Zero Client Trust:** The client never commands data changes. All inventory modifications (moving, splitting, equipping, consuming, dropping) are submitted as discrete intent requests and strictly validated by the server before any mutation occurs.
 * **Anti-Dupe Session-Locking:** Implements atomic session ownership locks preventing race-condition item duplications commonly caused by rapid disconnects, trade exploits, or concurrent remote spam.
-* **Equipment & Stat Engine:** Equipping weapons or shields attaches dynamic neon aesthetic models to character limbs (RightHand / LeftArm) and grants real-time stat buffs (`WalkSpeed`, attack power, shield armor) that persist across character respawns.
-* **Interactive 3D World Drops:** Dropping items removes them from inventory and spawns an animated bobbing/rotating 3D world model with rarity auras and distance-validated collection prompts.
-* **Cyber-Glassmorphic HUD:** Turnkey client interface with 24 inventory slots, hover tooltips, action drawer (`EQUIP`, `USE`, `SPLIT`, `DROP`), 5-slot bottom hotbar, and an instant **Give Starter Pack** demo button for rapid evaluator testing.
+* **Equipment & Stat Engine:** Equipping weapons or armor applies calibrated visual attachments to character limbs and grants real-time stat buffs (`WalkSpeed`, attack power, shield defense) that persist across character respawns.
+* **Interactive 3D World Drops:** Dropping items removes them from inventory and spawns an animated bobbing/rotating 3D world model with rarity auras and distance-validated proximity collection.
+* **Toggle Equip/Unequip:** Hotbar keys (1–5) and inventory slots feature instant toggle behavior (sheathe/draw) without removing items from slots.
 
 ---
 
